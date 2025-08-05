@@ -2,8 +2,6 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.entity.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantRepositoryPort;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa.RestaurantMapper;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa.JpaRestaurantRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository

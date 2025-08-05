@@ -67,6 +67,11 @@ dependencies {
 	testImplementation 'org.junit.jupiter:junit-jupiter-api'
 	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'com.h2database:h2'
+
+	// --- Usar .env ---
+	implementation 'io.github.cdimascio:dotenv-java:3.0.0'
+
 }
 
 tasks.named('test') {

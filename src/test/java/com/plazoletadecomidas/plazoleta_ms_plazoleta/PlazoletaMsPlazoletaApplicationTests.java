@@ -8,6 +8,7 @@ class PlazoletaMsPlazoletaApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// Método generado por Spring Boot para probar el arranque del contexto.
 	}
 
 }

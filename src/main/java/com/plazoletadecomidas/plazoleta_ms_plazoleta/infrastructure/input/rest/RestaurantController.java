@@ -3,7 +3,6 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.CreateRestaurantUseCase;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.CreateRestaurantCommand;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.RestaurantDto;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest.CreateRestaurantRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +32,6 @@ public class RestaurantController {
 
         RestaurantDto result = createRestaurantUseCase.execute(command);
 
-        return ResponseEntity.created(URI.create("/restaurantes/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/restaurants/" + result.getId())).body(result);
     }
 }

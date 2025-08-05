@@ -1,7 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.entity.Restaurant;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa.RestaurantEntity;
 
 public class RestaurantMapper {
 
@@ -15,5 +14,9 @@ public class RestaurantMapper {
         entity.setUrlLogo(restaurant.getUrlLogo());
         entity.setOwnerId(restaurant.getOwnerId());
         return entity;
+    }
+
+    private RestaurantMapper() {
+        throw new UnsupportedOperationException("Utility class");
     }
 }
