@@ -1,0 +1,75 @@
+plugins {
+	id 'org.springframework.boot' version '2.7.3'
+	id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+	id 'java'
+	id 'jacoco'
+}
+
+group = 'com.plazoletadecomidas'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	springBootVersion           = "2.7.3"
+	mapstructVersion            = "1.5.2.Final"
+	lombokVersion               = "1.18.24"
+	lombokMapstructBindingVersion = "0.2.0"
+	mySqlConnectorVersion       = "8.0.32"
+	openApiVersion              = "1.6.11"
+	javaxValidationApiVersion   = "2.0.1.Final"
+	javaxPersistenceApiVersion  = "2.2"
+}
+
+dependencies {
+	// --- Spring Boot Starters ---
+	implementation "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-security:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
+	// --- Drivers y Runtimes ---
+	implementation 'mysql:mysql-connector-java:8.0.33'
+	//runtimeOnly "mysql:mysql-connector-java:${mySqlConnectorVersion}"
+
+	// --- APIs estándar ---
+	implementation "javax.persistence:javax.persistence-api:${javaxPersistenceApiVersion}"
+	implementation "javax.validation:validation-api:${javaxValidationApiVersion}"
+
+	// --- MapStruct para mapeo DTO/Entidad ---
+	implementation   "org.mapstruct:mapstruct:${mapstructVersion}"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+	// --- Lombok ---
+	compileOnly        "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
+
+	// --- Documentación OpenAPI ---
+	implementation "org.springdoc:springdoc-openapi-ui:${openApiVersion}"
+	implementation "org.springdoc:springdoc-openapi-webflux-ui:${openApiVersion}"
+
+	// --- Testing ---
+	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
+	testImplementation 'org.junit.jupiter:junit-jupiter-api'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+	testImplementation 'org.mockito:mockito-core'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
