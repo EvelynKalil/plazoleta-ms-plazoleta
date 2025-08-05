@@ -1,37 +1,27 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.CreateRestaurantUseCase;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.CreateRestaurantCommand;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.RestaurantDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantRequestDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantResponseDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.RestaurantHandler;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.net.URI;
 
 @RestController
 @RequestMapping("/restaurants")
 public class RestaurantController {
 
-    private final CreateRestaurantUseCase createRestaurantUseCase;
+    private final RestaurantHandler handler;
 
-    public RestaurantController(CreateRestaurantUseCase createRestaurantUseCase) {
-        this.createRestaurantUseCase = createRestaurantUseCase;
+    public RestaurantController(RestaurantHandler handler) {
+        this.handler = handler;
     }
 
     @PostMapping
-    public ResponseEntity<RestaurantDto> create(@Valid @RequestBody CreateRestaurantRequest request) {
-        CreateRestaurantCommand command = new CreateRestaurantCommand(
-                request.getName(),
-                request.getNit(),
-                request.getAddress(),
-                request.getPhone(),
-                request.getUrlLogo(),
-                request.getOwnerId()
-        );
-
-        RestaurantDto result = createRestaurantUseCase.execute(command);
-
-        return ResponseEntity.created(URI.create("/restaurants/" + result.getId())).body(result);
+    public ResponseEntity<RestaurantResponseDto> create(@Valid @RequestBody RestaurantRequestDto dto) {
+        RestaurantResponseDto response = handler.saveRestaurant(dto);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }

@@ -1,24 +1,33 @@
-package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.out.jpa;
+package com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model;
 
-import javax.persistence.*;
 import java.util.UUID;
 
-@Entity
-@Table(name = "restaurants")
-public class RestaurantEntity {
-
-    @Id
+public class Restaurant {
     private UUID id;
-
     private String name;
     private String nit;
     private String address;
     private String phone;
     private String urlLogo;
-
-    @Column(name = "owner_id")
     private UUID ownerId;
 
+    public Restaurant(UUID id,
+                      String name,
+                      String nit,
+                      String address,
+                      String phone,
+                      String urlLogo,
+                      UUID ownerId) {
+        this.id = id;
+        this.name = name;
+        this.nit = nit;
+        this.address = address;
+        this.phone = phone;
+        this.urlLogo = urlLogo;
+        this.ownerId = ownerId;
+    }
+
+    // Getters y Setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
