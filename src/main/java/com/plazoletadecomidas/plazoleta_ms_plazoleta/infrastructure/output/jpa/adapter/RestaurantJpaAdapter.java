@@ -24,4 +24,9 @@ public class RestaurantJpaAdapter implements RestaurantPersistencePort {
         RestaurantEntity saved = repository.save(entity);
         return mapper.toModel(saved);
     }
+
+    @Override
+    public boolean existsByNit(String nit) {
+        return repository.existsByNit(nit); // <- método de JpaRepository
+    }
 }

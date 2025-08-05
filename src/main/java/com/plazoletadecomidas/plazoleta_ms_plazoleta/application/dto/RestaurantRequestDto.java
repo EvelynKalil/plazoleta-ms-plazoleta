@@ -24,6 +24,9 @@ public class RestaurantRequestDto {
     @NotNull (message = "El campo Id Propietario es obligatorio")
     private UUID ownerId;
 
+    public RestaurantRequestDto(String restaurante, String number, String calle, String s, String url, UUID uuid) {
+    }
+
     public String getName() {
         return name;
     }
