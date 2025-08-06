@@ -5,4 +5,6 @@ import java.util.UUID;
 
 public interface DishServicePort {
     Dish saveDish(Dish dish, UUID ownerId);
+    void updateDish(UUID id, String description, Integer price);
+
 }

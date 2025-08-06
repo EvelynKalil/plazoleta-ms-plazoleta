@@ -33,4 +33,16 @@ public class DishUseCase implements DishServicePort {
 
         return persistencePort.saveDish(dish);
     }
+
+    @Override
+    public void updateDish(UUID id, String description, Integer price) {
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("La descripción no puede estar vacía.");
+        }
+        if (price == null || price <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor que cero.");
+        }
+
+        persistencePort.updateDish(id, description, price);
+    }
 }

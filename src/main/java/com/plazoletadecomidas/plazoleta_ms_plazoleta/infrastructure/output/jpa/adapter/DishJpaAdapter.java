@@ -2,10 +2,13 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Dish;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistencePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.DishEntity;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.mapper.DishEntityMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.DishRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class DishJpaAdapter implements DishPersistencePort {
@@ -24,5 +27,17 @@ public class DishJpaAdapter implements DishPersistencePort {
         DishEntity saved = repository.save(entity);
         return mapper.toModel(saved);
     }
+
+    @Override
+    public void updateDish(UUID id, String description, Integer price) {
+        DishEntity dish = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con id: " + id));
+
+        dish.setDescription(description);
+        dish.setPrice(price);
+
+        repository.save(dish);
+    }
+
 
 }

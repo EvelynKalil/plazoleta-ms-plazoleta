@@ -25,4 +25,10 @@ public class DishHandler {
         dishServicePort.saveDish(model, ownerId);
         return dishMapper.toResponseDto(model);
     }
+
+    public void updateDish(UUID dishId, DishRequestDto dto) {
+        dishServicePort.updateDish(dishId, dto.getDescription(), dto.getPrice());
+    }
+
+
 }

@@ -27,6 +27,16 @@ public class DishController {
         DishResponseDto response = dishHandler.saveDish(requestDto, ownerId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateDish(
+            @PathVariable UUID id,
+            @Valid @RequestBody DishRequestDto dishRequestDto
+    ) {
+        dishHandler.updateDish(id, dishRequestDto);
+        return ResponseEntity.noContent().build();
+    }
+
 }
 
 

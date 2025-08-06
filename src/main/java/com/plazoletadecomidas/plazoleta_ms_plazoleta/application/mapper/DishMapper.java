@@ -12,7 +12,8 @@ public class DishMapper {
 
     public Dish toModel(DishRequestDto dto) {
         return Dish.builder()
-                .id(UUID.randomUUID())
+                // No seteas el id manualmente
+                // .id(...) se elimina completamente
                 .name(dto.getName())
                 .price(dto.getPrice())
                 .description(dto.getDescription())
