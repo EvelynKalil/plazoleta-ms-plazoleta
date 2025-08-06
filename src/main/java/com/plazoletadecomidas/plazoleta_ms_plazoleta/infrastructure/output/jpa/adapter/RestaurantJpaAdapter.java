@@ -2,10 +2,12 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.RestaurantEntity;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.mapper.RestaurantEntityMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.RestaurantRepository;
 import org.springframework.stereotype.Component;
+import java.util.UUID;
 
 @Component
 public class RestaurantJpaAdapter implements RestaurantPersistencePort {
@@ -27,6 +29,14 @@ public class RestaurantJpaAdapter implements RestaurantPersistencePort {
 
     @Override
     public boolean existsByNit(String nit) {
-        return repository.existsByNit(nit); // <- método de JpaRepository
+        return repository.existsByNit(nit);
+    }
+
+    @Override
+    public Restaurant getRestaurantById(UUID id) {
+        return repository.findById(id)
+                .map(mapper::toModel)
+                .orElseThrow(() -> new NotFoundException("El ID del restaurante es inválido"));
     }
 }
+

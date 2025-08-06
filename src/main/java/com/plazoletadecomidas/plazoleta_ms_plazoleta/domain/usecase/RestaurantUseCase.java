@@ -5,6 +5,8 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.RestaurantAlreadyExistsException;
 
+import java.util.UUID;
+
 public class RestaurantUseCase implements RestaurantServicePort {
 
     private final RestaurantPersistencePort persistencePort;
@@ -20,5 +22,10 @@ public class RestaurantUseCase implements RestaurantServicePort {
         }
 
         return persistencePort.saveRestaurant(restaurant);
+    }
+
+    @Override
+    public Restaurant getRestaurantById(UUID restaurantId) {
+        return persistencePort.getRestaurantById(restaurantId);
     }
 }

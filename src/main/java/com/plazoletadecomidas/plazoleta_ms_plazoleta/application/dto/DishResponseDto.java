@@ -1,0 +1,27 @@
+package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import java.util.UUID;
+
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+
+public class DishResponseDto {
+
+    private UUID id;
+    private String name;
+    private Integer price;
+    private String description;
+    private String urlImage;
+    private String category;
+    private UUID restaurantId;
+    private boolean active;
+
+    public DishResponseDto(String name, Integer price, String description, String urlImage, String category, UUID restaurantId) {
+    }
+}
