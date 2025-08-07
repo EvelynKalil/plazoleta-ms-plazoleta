@@ -10,7 +10,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@Builder
+@Builder (toBuilder = true)
 
 public class Restaurant {
     private UUID id;

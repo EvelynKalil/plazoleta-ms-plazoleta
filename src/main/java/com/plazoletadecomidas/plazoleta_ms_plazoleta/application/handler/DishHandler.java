@@ -10,7 +10,6 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
-
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;

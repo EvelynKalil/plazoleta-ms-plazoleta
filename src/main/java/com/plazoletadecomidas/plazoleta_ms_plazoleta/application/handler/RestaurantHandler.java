@@ -5,11 +5,9 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantR
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.RestaurantMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 public class RestaurantHandler {
@@ -25,14 +23,13 @@ public class RestaurantHandler {
     }
 
     public RestaurantResponseDto saveRestaurant(RestaurantRequestDto dto, String token) {
-        // Validar que quien llama tenga el rol ADMINISTRADOR
-        UUID ownerId = authValidator.validate(token, Role.ADMINISTRADOR);
+        // Validar que el usuario autenticado tiene el rol de ADMINISTRADOR
+        authValidator.validate(token, Role.ADMINISTRADOR);
 
-        // Asignar el ownerId al restaurante
+        // Usar directamente el ownerId que viene en el body (dto)
         Restaurant restaurant = mapper.toModel(dto);
-        restaurant.setOwnerId(ownerId);
-
         Restaurant savedRestaurant = servicePort.saveRestaurant(restaurant);
+
         return mapper.toResponseDto(savedRestaurant);
     }
 }

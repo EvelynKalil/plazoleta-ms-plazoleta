@@ -8,8 +8,10 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServic
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Dish;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,31 +26,27 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DishHandlerTest {
 
-    @Mock
-    private DishServicePort dishServicePort;
-
-    @Mock
-    private DishMapper dishMapper;
-
-    @Mock
-    private AuthValidator authValidator;
-
-    @Mock
-    private RestaurantServicePort restaurantServicePort;
+    @Mock private DishServicePort dishServicePort;
+    @Mock private DishMapper dishMapper;
+    @Mock private AuthValidator authValidator;
+    @Mock private RestaurantServicePort restaurantServicePort;
 
     @InjectMocks
     private DishHandler dishHandler;
 
-    private final UUID restaurantId = UUID.randomUUID();
-    private final UUID ownerId = UUID.randomUUID();
-    private final String token = "Bearer tokenEjemplo";
-
+    private UUID restaurantId;
+    private UUID ownerId;
+    private String token;
     private DishRequestDto dto;
     private Dish dish;
     private DishResponseDto responseDto;
 
     @BeforeEach
     void setUp() {
+        restaurantId = UUID.randomUUID();
+        ownerId = UUID.randomUUID();
+        token = "Bearer ejemplo";
+
         dto = new DishRequestDto();
         dto.setName("Arepa");
         dto.setPrice(5000);
@@ -58,7 +56,6 @@ class DishHandlerTest {
         dto.setRestaurantId(restaurantId);
 
         dish = Dish.builder()
-                .id(null)
                 .name(dto.getName())
                 .price(dto.getPrice())
                 .description(dto.getDescription())
@@ -75,12 +72,13 @@ class DishHandlerTest {
                 .description(dish.getDescription())
                 .urlImage(dish.getUrlImage())
                 .category(dish.getCategory())
-                .restaurantId(dish.getRestaurantId())
-                .active(dish.isActive())
+                .restaurantId(restaurantId)
+                .active(true)
                 .build();
     }
 
     @Test
+    @DisplayName("Debe guardar y retornar un plato si el propietario es válido")
     void saveDish_deberiaGuardarYRetornarDishSiUsuarioEsPropietario() {
         // Arrange
         Restaurant restaurant = new Restaurant();
@@ -99,13 +97,16 @@ class DishHandlerTest {
         // Assert
         assertNotNull(result);
         assertEquals(dto.getName(), result.getName());
+        assertEquals(dto.getPrice(), result.getPrice());
         verify(authValidator).validate(token, Role.PROPIETARIO);
         verify(restaurantServicePort).getRestaurantById(restaurantId);
         verify(dishServicePort).saveDish(dish, ownerId);
         verify(dishMapper).toResponseDto(dish);
+        verifyNoMoreInteractions(dishServicePort, restaurantServicePort, authValidator, dishMapper);
     }
 
     @Test
+    @DisplayName("Debe permitir actualizar si el propietario del restaurante es válido")
     void updateDish_deberiaActualizarSiUsuarioEsDuenioDelRestaurante() {
         // Arrange
         UUID dishId = UUID.randomUUID();
@@ -131,5 +132,30 @@ class DishHandlerTest {
         verify(dishServicePort).getDishById(dishId);
         verify(restaurantServicePort).getRestaurantById(restaurantId);
         verify(dishServicePort).updateDish(dishId, dto.getDescription(), dto.getPrice(), ownerId);
+        verifyNoMoreInteractions(authValidator, dishServicePort, restaurantServicePort);
     }
+
+    @Test
+    @DisplayName("No debe permitir guardar si el owner del token no es el del restaurante")
+    void saveDish_deberiaFallarSiOwnerNoCoincide() {
+        // Arrange
+        UUID otroOwner = UUID.randomUUID(); // un dueño diferente
+        Restaurant restaurant = new Restaurant();
+        restaurant.setId(restaurantId);
+        restaurant.setOwnerId(otroOwner); // owner no coincide
+
+        when(authValidator.validate(token, Role.PROPIETARIO)).thenReturn(ownerId);
+        when(restaurantServicePort.getRestaurantById(restaurantId)).thenReturn(restaurant);
+
+        // Act & Assert
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
+            dishHandler.saveDish(dto, token);
+        });
+
+        assertEquals("No puedes crear platos para un restaurante que no es tuyo.", ex.getMessage());
+        verify(authValidator).validate(token, Role.PROPIETARIO);
+        verify(restaurantServicePort).getRestaurantById(restaurantId);
+        verifyNoMoreInteractions(dishServicePort);
+    }
+
 }
