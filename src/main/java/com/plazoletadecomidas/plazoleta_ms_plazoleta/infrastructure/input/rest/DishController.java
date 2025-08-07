@@ -48,4 +48,18 @@ public class DishController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Map<String, String>> toggleDishStatus(
+            @PathVariable UUID id,
+            @RequestParam boolean enabled,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        dishHandler.toggleDishStatus(id, enabled, token);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Plato " + (enabled ? "habilitado" : "deshabilitado") + " correctamente");
+        response.put("dishId", id.toString());
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.DishRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.DishResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.DishHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -33,6 +36,9 @@ class DishControllerTest {
 
     @MockBean
     private DishHandler dishHandler;
+
+    @MockBean
+    private AuthValidator authValidator;
 
     @Test
     @DisplayName("Debería crear un plato exitosamente")
@@ -101,4 +107,16 @@ class DishControllerTest {
                 .andExpect(jsonPath("$.dishId").value(dishId.toString()));
     }
 
+    @Test
+    @DisplayName("Debería retornar 200 al habilitar plato con token válido")
+    void shouldToggleDishStatusSuccessfully() throws Exception {
+        UUID dishId = UUID.randomUUID();
+
+        mockMvc.perform(patch("/dishes/{id}/status", dishId)
+                        .param("enabled", "true")
+                        .header("Authorization", "Bearer token-valido"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Plato habilitado correctamente"))
+                .andExpect(jsonPath("$.dishId").value(dishId.toString()));
+    }
 }

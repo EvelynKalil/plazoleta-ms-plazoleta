@@ -7,5 +7,5 @@ public interface DishServicePort {
     Dish saveDish(Dish dish, UUID ownerId);
     void updateDish(UUID dishId, String description, Integer price, UUID ownerId);
     Dish getDishById(UUID id);
-
+    void toggleDishStatus(UUID dishId, boolean enabled);
 }

@@ -8,4 +8,5 @@ public interface DishPersistencePort {
     Dish saveDish(Dish dish);
     void updateDish(UUID id, String description, Integer price);
     Dish getDishById(UUID dishId);
+    void toggleDishStatus(UUID dishId, boolean enabled);
 }

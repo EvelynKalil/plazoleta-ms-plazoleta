@@ -158,4 +158,61 @@ class DishHandlerTest {
         verifyNoMoreInteractions(dishServicePort);
     }
 
+    @Test
+    @DisplayName("Debería cambiar el estado del plato si el owner es el dueño del restaurante")
+    void toggleDishStatus_deberiaCambiarEstadoSiOwnerEsValido() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        boolean nuevoEstado = false;
+
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .restaurantId(restaurantId)
+                .build();
+
+        Restaurant restaurant = new Restaurant();
+        restaurant.setId(restaurantId);
+        restaurant.setOwnerId(ownerId);
+
+        when(authValidator.validate(token, Role.PROPIETARIO)).thenReturn(ownerId);
+        when(dishServicePort.getDishById(dishId)).thenReturn(existingDish);
+        when(restaurantServicePort.getRestaurantById(restaurantId)).thenReturn(restaurant);
+
+        // Act
+        dishHandler.toggleDishStatus(dishId, nuevoEstado, token);
+
+        // Assert
+        verify(dishServicePort).toggleDishStatus(dishId, nuevoEstado);
+    }
+
+    @Test
+    @DisplayName("Debería lanzar excepción si el owner del token no es el del restaurante")
+    void toggleDishStatus_deberiaFallarSiOwnerNoCoincide() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        UUID otroOwner = UUID.randomUUID();
+
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .restaurantId(restaurantId)
+                .build();
+
+        Restaurant restaurant = new Restaurant();
+        restaurant.setId(restaurantId);
+        restaurant.setOwnerId(otroOwner);
+
+        when(authValidator.validate(token, Role.PROPIETARIO)).thenReturn(ownerId);
+        when(dishServicePort.getDishById(dishId)).thenReturn(existingDish);
+        when(restaurantServicePort.getRestaurantById(restaurantId)).thenReturn(restaurant);
+
+        // Act & Assert
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () -> {
+            dishHandler.toggleDishStatus(dishId, true, token);
+        });
+
+        assertEquals("No puedes modificar platos de un restaurante que no es tuyo.", ex.getMessage());
+    }
+
+
+
 }

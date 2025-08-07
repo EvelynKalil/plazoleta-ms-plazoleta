@@ -64,4 +64,10 @@ public class DishUseCase implements DishServicePort {
         return persistencePort.getDishById(id);
     }
 
+    @Override
+    public void toggleDishStatus(UUID dishId, boolean enabled) {
+        persistencePort.toggleDishStatus(dishId, enabled);
+    }
+
+
 }

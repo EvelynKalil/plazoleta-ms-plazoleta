@@ -59,4 +59,18 @@ public class DishHandler {
 
         dishServicePort.updateDish(dishId, dto.getDescription(), dto.getPrice(), userId);
     }
+
+    public void toggleDishStatus(UUID dishId, boolean enabled, String token) {
+        UUID ownerId = authValidator.validate(token, Role.PROPIETARIO);
+
+        Dish dish = dishServicePort.getDishById(dishId);
+        Restaurant restaurant = restaurantServicePort.getRestaurantById(dish.getRestaurantId());
+
+        if (!restaurant.getOwnerId().equals(ownerId)) {
+            throw new UnauthorizedException("No puedes modificar platos de un restaurante que no es tuyo.");
+        }
+
+        dishServicePort.toggleDishStatus(dishId, enabled);
+    }
+
 }

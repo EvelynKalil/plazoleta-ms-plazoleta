@@ -8,6 +8,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.m
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.DishRepository;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.UUID;
 
 @Service
@@ -46,6 +47,13 @@ public class DishJpaAdapter implements DishPersistencePort {
         return mapper.toModel(entity);
     }
 
+    @Override
+    @Transactional
+    public void toggleDishStatus(UUID dishId, boolean enabled) {
+        DishEntity entity = repository.findById(dishId)
+                .orElseThrow(() -> new RuntimeException("Plato no encontrado con id: " + dishId));
 
-
+        entity.setActive(enabled);
+        repository.save(entity);
+    }
 }
