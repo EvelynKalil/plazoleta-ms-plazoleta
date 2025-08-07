@@ -1,8 +1,10 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto;
 
+import lombok.Getter;
+
 import javax.validation.constraints.*;
 import java.util.UUID;
-
+@Getter
 public class RestaurantRequestDto {
     @NotBlank (message = "El campo nombre es obligatorio")
     @Pattern(regexp = "^(?!\\d+$).+", message = "El nombre no puede contener solo números")
@@ -27,27 +29,4 @@ public class RestaurantRequestDto {
     public RestaurantRequestDto(String restaurante, String number, String calle, String s, String url, UUID uuid) {
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getNit() {
-        return nit;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public String getUrlLogo() {
-        return urlLogo;
-    }
-
-    public UUID getOwnerId() {
-        return ownerId;
-    }
 }

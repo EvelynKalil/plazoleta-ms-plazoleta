@@ -5,4 +5,5 @@ import java.util.UUID;
 public interface RestaurantServicePort {
     Restaurant saveRestaurant(Restaurant restaurant);
     Restaurant getRestaurantById(UUID restaurantId);
+
 }

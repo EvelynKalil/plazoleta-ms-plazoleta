@@ -10,9 +10,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.any;
 import java.util.UUID;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,7 +45,7 @@ class DishControllerValidationTest {
 
         mockMvc.perform(post("/dishes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("owner-id", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + UUID.randomUUID())
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
     }
@@ -61,7 +64,7 @@ class DishControllerValidationTest {
 
         mockMvc.perform(post("/dishes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("owner-id", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + UUID.randomUUID())
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
     }
@@ -82,13 +85,13 @@ class DishControllerValidationTest {
 
         mockMvc.perform(post("/dishes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("owner-id", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + UUID.randomUUID())
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("Debería retornar 400 cuando falta el header owner-id")
+    @DisplayName("Debería retornar 400 cuando falta el header Authorization")
     void shouldReturn400WhenMissingOwnerIdHeader() throws Exception {
         DishRequestDto dto = DishRequestDto.builder()
                 .name("Empanada")
@@ -104,4 +107,30 @@ class DishControllerValidationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
     }
+    @Test
+    @DisplayName("Debería retornar 401 si el owner no tiene permisos para actualizar el plato")
+    void shouldReturn401WhenOwnerIsUnauthorized() throws Exception {
+        UUID dishId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        String token = "Bearer " + ownerId;
+
+        DishRequestDto dto = DishRequestDto.builder()
+                .name("Oblea")
+                .price(5000)
+                .description("Con arequipe")
+                .urlImage("https://url.com/oblea.jpg")
+                .category("Postres")
+                .restaurantId(UUID.randomUUID())
+                .build();
+
+        doThrow(new UnauthorizedException("No tienes permisos para modificar este plato."))
+                .when(dishHandler).updateDish(eq(dishId), any(DishRequestDto.class), eq(token));
+
+        mockMvc.perform(put("/dishes/{id}", dishId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized());
+    }
+
 }

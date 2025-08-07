@@ -39,5 +39,13 @@ public class DishJpaAdapter implements DishPersistencePort {
         repository.save(dish);
     }
 
+    @Override
+    public Dish getDishById(UUID id) {
+        DishEntity entity = repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Plato no encontrado con id: " + id));
+        return mapper.toModel(entity);
+    }
+
+
 
 }

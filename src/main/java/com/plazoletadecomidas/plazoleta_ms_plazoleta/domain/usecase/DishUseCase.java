@@ -24,7 +24,7 @@ public class DishUseCase implements DishServicePort {
     public Dish saveDish(Dish dish, UUID ownerId) {
         Restaurant restaurant = restaurantServicePort.getRestaurantById(dish.getRestaurantId());
 
-        if (restaurant == null){
+        if (restaurant == null) {
             throw new NotFoundException("Id de restaurante inválido");
         }
         if (!restaurant.getOwnerId().equals(ownerId)) {
@@ -35,14 +35,33 @@ public class DishUseCase implements DishServicePort {
     }
 
     @Override
-    public void updateDish(UUID id, String description, Integer price) {
+    public void updateDish(UUID dishId, String description, Integer price, UUID ownerId) {
+        Dish dish = persistencePort.getDishById(dishId);
+
+        if (dish == null) {
+            throw new NotFoundException("Plato no encontrado con id: " + dishId);
+        }
+
+        Restaurant restaurant = restaurantServicePort.getRestaurantById(dish.getRestaurantId());
+
+        if (!restaurant.getOwnerId().equals(ownerId)) {
+            throw new UnauthorizedException("No tienes permisos para modificar este plato.");
+        }
+
         if (description == null || description.isBlank()) {
             throw new IllegalArgumentException("La descripción no puede estar vacía.");
         }
+
         if (price == null || price <= 0) {
             throw new IllegalArgumentException("El precio debe ser mayor que cero.");
         }
 
-        persistencePort.updateDish(id, description, price);
+        persistencePort.updateDish(dishId, description, price);
     }
+
+    @Override
+    public Dish getDishById(UUID id) {
+        return persistencePort.getDishById(id);
+    }
+
 }

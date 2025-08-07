@@ -100,4 +100,81 @@ class DishUseCaseTest {
         assertEquals("No puedes crear platos para un restaurante que no es tuyo.", ex.getMessage());
         verify(dishPersistencePort, never()).saveDish(any());
     }
+    @Test
+    void actualizarDish_conOwnerValido_modificaPlatoCorrectamente() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .restaurantId(validRestaurantId)
+                .build();
+        Restaurant restaurant = new Restaurant(validRestaurantId, "Taco Bell", "123", "Calle", "300", "url", ownerId);
+
+        when(dishPersistencePort.getDishById(dishId)).thenReturn(existingDish);
+        when(restaurantServicePort.getRestaurantById(validRestaurantId)).thenReturn(restaurant);
+
+        // Act
+        dishUseCase.updateDish(dishId, "Nueva descripción", 25000, ownerId);
+
+        // Assert
+        verify(dishPersistencePort).updateDish(dishId, "Nueva descripción", 25000);
+    }
+
+    @Test
+    void actualizarDish_conPlatoNoExistente_lanzaNotFound() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        when(dishPersistencePort.getDishById(dishId)).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException ex = assertThrows(NotFoundException.class, () ->
+                dishUseCase.updateDish(dishId, "desc", 15000, ownerId));
+
+        assertEquals("Plato no encontrado con id: " + dishId, ex.getMessage());
+        verify(dishPersistencePort, never()).updateDish(any(), any(), any());
+    }
+
+    @Test
+    void actualizarDish_conOwnerIncorrecto_lanzaUnauthorized() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        UUID otroOwner = UUID.randomUUID();
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .restaurantId(validRestaurantId)
+                .build();
+        Restaurant restaurant = new Restaurant(validRestaurantId, "KFC", "123", "Calle", "300", "url", otroOwner);
+
+        when(dishPersistencePort.getDishById(dishId)).thenReturn(existingDish);
+        when(restaurantServicePort.getRestaurantById(validRestaurantId)).thenReturn(restaurant);
+
+        // Act & Assert
+        UnauthorizedException ex = assertThrows(UnauthorizedException.class, () ->
+                dishUseCase.updateDish(dishId, "desc", 10000, ownerId));
+
+        assertEquals("No tienes permisos para modificar este plato.", ex.getMessage());
+        verify(dishPersistencePort, never()).updateDish(any(), any(), any());
+    }
+
+    @Test
+    void actualizarDish_conPrecioInvalido_lanzaIllegalArgument() {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = Dish.builder()
+                .id(dishId)
+                .restaurantId(validRestaurantId)
+                .build();
+        Restaurant restaurant = new Restaurant(validRestaurantId, "Burger", "123", "Calle", "300", "url", ownerId);
+
+        when(dishPersistencePort.getDishById(dishId)).thenReturn(existingDish);
+        when(restaurantServicePort.getRestaurantById(validRestaurantId)).thenReturn(restaurant);
+
+        // Act & Assert
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                dishUseCase.updateDish(dishId, "desc", 0, ownerId));
+
+        assertEquals("El precio debe ser mayor que cero.", ex.getMessage());
+        verify(dishPersistencePort, never()).updateDish(any(), any(), any());
+    }
+
 }

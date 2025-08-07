@@ -1,6 +1,16 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model;
 
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.UUID;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@Builder
 
 public class Restaurant {
     private UUID id;
@@ -26,26 +36,4 @@ public class Restaurant {
         this.urlLogo = urlLogo;
         this.ownerId = ownerId;
     }
-
-    // Getters y Setters
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getNit() { return nit; }
-    public void setNit(String nit) { this.nit = nit; }
-
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
-    public String getUrlLogo() { return urlLogo; }
-    public void setUrlLogo(String urlLogo) { this.urlLogo = urlLogo; }
-
-    public UUID getOwnerId() { return ownerId; }
-    public void setOwnerId(UUID ownerId) { this.ownerId = ownerId; }
 }

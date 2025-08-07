@@ -12,6 +12,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.UUID;
 
@@ -59,16 +61,44 @@ class DishControllerTest {
                 .active(true)
                 .build();
 
-        when(dishHandler.saveDish(requestDto, ownerId)).thenReturn(responseDto);
+        when(dishHandler.saveDish((requestDto), ("Bearer " + ownerId))).thenReturn(responseDto);
 
         // Act & Assert
         mockMvc.perform(post("/dishes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("owner-id", ownerId.toString())
+                        .header("Authorization", "Bearer " + ownerId)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Arepa rellena"))
                 .andExpect(jsonPath("$.price").value(9000))
                 .andExpect(jsonPath("$.active").value(true));
     }
+
+    @Test
+    @DisplayName("Debería actualizar un plato exitosamente")
+    void actualizarDish_exitosamente() throws Exception {
+        // Arrange
+        UUID dishId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+
+        DishRequestDto requestDto = DishRequestDto.builder()
+                .name("Arepa rellena")
+                .price(9500)
+                .description("Arepa con más queso")
+                .urlImage("http://img.com/arepa.jpg")
+                .category("Típico")
+                .restaurantId(UUID.randomUUID())
+                .build();
+        // Act & Assert
+        mockMvc.perform(
+                        put("/dishes/{id}", dishId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + ownerId)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Plato 'Arepa rellena' actualizado correctamente"))
+                .andExpect(jsonPath("$.dishId").value(dishId.toString()));
+    }
+
 }

@@ -8,8 +8,8 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Builder
 @AllArgsConstructor
+@Builder
 
 public class DishResponseDto {
 
@@ -21,7 +21,4 @@ public class DishResponseDto {
     private String category;
     private UUID restaurantId;
     private boolean active;
-
-    public DishResponseDto(String name, Integer price, String description, String urlImage, String category, UUID restaurantId) {
-    }
 }

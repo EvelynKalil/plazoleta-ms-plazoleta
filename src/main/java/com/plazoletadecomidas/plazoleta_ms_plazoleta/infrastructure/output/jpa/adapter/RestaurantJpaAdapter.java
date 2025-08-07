@@ -36,7 +36,7 @@ public class RestaurantJpaAdapter implements RestaurantPersistencePort {
     public Restaurant getRestaurantById(UUID id) {
         return repository.findById(id)
                 .map(mapper::toModel)
-                .orElseThrow(() -> new NotFoundException("El ID del restaurante es inválido"));
+                .orElseThrow(() -> new NotFoundException("Restaurante no encontrado con id: " + id));
     }
 }
 
