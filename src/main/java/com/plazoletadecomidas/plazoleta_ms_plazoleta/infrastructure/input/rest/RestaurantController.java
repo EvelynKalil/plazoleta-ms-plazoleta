@@ -4,9 +4,11 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantR
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.RestaurantHandler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantBasicResponseDto;
 
 import javax.validation.Valid;
 
@@ -30,4 +32,14 @@ public class RestaurantController {
         RestaurantResponseDto response = handler.saveRestaurant(dto, token);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @GetMapping
+    public ResponseEntity<Page<RestaurantBasicResponseDto>> getRestaurants(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestHeader(value ="Authorization" , required = false) String token
+    ) {
+        return ResponseEntity.ok(handler.getRestaurants(page, size, token));
+    }
+
 }

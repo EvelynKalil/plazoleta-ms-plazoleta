@@ -1,11 +1,12 @@
+// Archivo: RestaurantResponseDto.java
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto;
+
 import lombok.Getter;
 import lombok.Setter;
-
 import java.util.UUID;
+
 @Getter
 @Setter
-
 public class RestaurantResponseDto {
     private UUID id;
     private String name;

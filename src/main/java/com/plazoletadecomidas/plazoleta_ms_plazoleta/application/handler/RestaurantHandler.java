@@ -1,5 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler;
 
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantBasicResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.RestaurantMapper;
@@ -7,7 +8,11 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServic
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class RestaurantHandler {
@@ -31,5 +36,12 @@ public class RestaurantHandler {
         Restaurant savedRestaurant = servicePort.saveRestaurant(restaurant);
 
         return mapper.toResponseDto(savedRestaurant);
+    }
+
+    public Page<RestaurantBasicResponseDto> getRestaurants(int page, int size, String token) {
+        authValidator.validate(token, Role.CLIENTE);
+        Pageable pageable = PageRequest.of(page, size);
+        return servicePort.getAllRestaurants(pageable)
+                .map(mapper::toBasicResponseDto);
     }
 }

@@ -7,6 +7,8 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -68,6 +70,17 @@ public class DishUseCase implements DishServicePort {
     public void toggleDishStatus(UUID dishId, boolean enabled) {
         persistencePort.toggleDishStatus(dishId, enabled);
     }
+
+    @Override
+    public Page<Dish> getDishesByRestaurant(UUID restaurantId, Pageable pageable) {
+        return persistencePort.getDishesByRestaurant(restaurantId, pageable);
+    }
+
+    @Override
+    public Page<Dish> getDishesByRestaurantAndCategory(UUID restaurantId, String category, Pageable pageable) {
+        return persistencePort.getDishesByRestaurantAndCategory(restaurantId, category, pageable);
+    }
+
 
 
 }

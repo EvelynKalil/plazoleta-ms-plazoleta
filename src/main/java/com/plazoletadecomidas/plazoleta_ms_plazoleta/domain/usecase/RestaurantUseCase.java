@@ -4,6 +4,8 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServic
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.RestaurantAlreadyExistsException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -27,5 +29,10 @@ public class RestaurantUseCase implements RestaurantServicePort {
     @Override
     public Restaurant getRestaurantById(UUID restaurantId) {
         return persistencePort.getRestaurantById(restaurantId);
+    }
+
+    @Override
+    public Page<Restaurant> getAllRestaurants(Pageable pageable) {
+        return persistencePort.getAllRestaurants(pageable);
     }
 }

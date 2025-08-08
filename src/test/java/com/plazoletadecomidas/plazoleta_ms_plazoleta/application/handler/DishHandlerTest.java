@@ -17,7 +17,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -212,6 +217,70 @@ class DishHandlerTest {
 
         assertEquals("No puedes modificar platos de un restaurante que no es tuyo.", ex.getMessage());
     }
+
+    @DisplayName("Debe retornar platos paginados de un restaurante sin filtro de categoría")
+    @Test
+    void listDishesByRestaurant_sinCategoria() {
+        int page = 0;
+        int size = 2;
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Dish d1 = Dish.builder()
+                .name("Sushi")
+                .price(10000)
+                .description("Rolls")
+                .urlImage("img.png")
+                .category("japonés")
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+        Dish d2 = Dish.builder()
+                .name("Taco")
+                .price(8000)
+                .description("De carne")
+                .urlImage("taco.png")
+                .category("mexicano")
+                .restaurantId(restaurantId)
+                .active(true)
+                .build();
+
+
+        Page<Dish> dishPage = new PageImpl<>(List.of(d1, d2));
+        DishResponseDto dto1 = DishResponseDto.builder()
+                .name("Sushi")
+                .description("...")
+                .price(10000)
+                .active(true)
+                .category("japonés")
+                .restaurantId(restaurantId)
+                .urlImage("img.png")
+                .build();
+
+        DishResponseDto dto2 = DishResponseDto.builder()
+                .name("Taco")
+                .description("...")
+                .price(15000)
+                .active(true)
+                .category("Mexicano")
+                .restaurantId(restaurantId)
+                .urlImage("img.png")
+                .build();
+
+
+        when(authValidator.validate(token, Role.CLIENTE)).thenReturn(UUID.randomUUID());
+        when(dishServicePort.getDishesByRestaurant(restaurantId, pageable)).thenReturn(dishPage);
+        when(dishMapper.toResponseDto(d1)).thenReturn(dto1);
+        when(dishMapper.toResponseDto(d2)).thenReturn(dto2);
+
+        Page<DishResponseDto> result = dishHandler.listDishesByRestaurant(restaurantId, null, page, size, token);
+
+        assertEquals(2, result.getContent().size());
+        assertEquals("Sushi", result.getContent().get(0).getName());
+        assertEquals("Taco", result.getContent().get(1).getName());
+    }
+
 
 
 

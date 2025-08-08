@@ -10,6 +10,9 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -72,5 +75,18 @@ public class DishHandler {
 
         dishServicePort.toggleDishStatus(dishId, enabled);
     }
+
+    public Page<DishResponseDto> listDishesByRestaurant(UUID restaurantId, String category, int page, int size, String token) {
+        authValidator.validate(token, Role.CLIENTE);
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Dish> dishes = (category == null || category.isBlank())
+                ? dishServicePort.getDishesByRestaurant(restaurantId, pageable)
+                : dishServicePort.getDishesByRestaurantAndCategory(restaurantId, category, pageable);
+
+        return dishes.map(dishMapper::toResponseDto);
+    }
+
 
 }

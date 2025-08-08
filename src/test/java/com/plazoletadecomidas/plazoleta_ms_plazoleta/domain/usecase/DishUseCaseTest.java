@@ -7,8 +7,14 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistenceP
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -176,5 +182,82 @@ class DishUseCaseTest {
         assertEquals("El precio debe ser mayor que cero.", ex.getMessage());
         verify(dishPersistencePort, never()).updateDish(any(), any(), any());
     }
+
+    @DisplayName("Debe retornar platos paginados de un restaurante (sin categoría)")
+    @Test
+    void shouldReturnDishesByRestaurantWithoutCategory() {
+        // Arrange
+        UUID restaurantId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 2);
+
+        Dish d1 = Dish.builder()
+                .name("Pizza")
+                .description("Italiana")
+                .price(25000)
+                .active(true)
+                .category("italiana")
+                .urlImage("pizza.png")
+                .restaurantId(restaurantId)
+                .build();
+
+        Dish d2 = Dish.builder()
+                .name("Hamburguesa")
+                .description("Clásica")
+                .price(18000)
+                .active(true)
+                .category("americana")
+                .urlImage("burger.png")
+                .restaurantId(restaurantId)
+                .build();
+
+        Page<Dish> expectedPage = new PageImpl<>(List.of(d1, d2));
+
+        when(dishPersistencePort.getDishesByRestaurant(restaurantId, pageable)).thenReturn(expectedPage);
+
+        // Act
+        Page<Dish> result = dishUseCase.getDishesByRestaurant(restaurantId, pageable);
+
+        // Assert
+        assertEquals(2, result.getContent().size());
+        assertEquals("Pizza", result.getContent().get(0).getName());
+        assertEquals("Hamburguesa", result.getContent().get(1).getName());
+
+        verify(dishPersistencePort).getDishesByRestaurant(restaurantId, pageable);
+    }
+
+    @DisplayName("Debe retornar platos filtrados por categoría")
+    @Test
+    void shouldReturnDishesByRestaurantWithCategory() {
+        // Arrange
+        UUID restaurantId = UUID.randomUUID();
+        String category = "ensaladas";
+        Pageable pageable = PageRequest.of(0, 1);
+
+        Dish dish = Dish.builder()
+                .name("Ensalada César")
+                .description("Con pollo y parmesano")
+                .price(12000)
+                .active(true)
+                .category(category)
+                .urlImage("cesar.jpg")
+                .restaurantId(restaurantId)
+                .build();
+
+        Page<Dish> expectedPage = new PageImpl<>(List.of(dish));
+
+        when(dishPersistencePort.getDishesByRestaurantAndCategory(restaurantId, category, pageable))
+                .thenReturn(expectedPage);
+
+        // Act
+        Page<Dish> result = dishUseCase.getDishesByRestaurantAndCategory(restaurantId, category, pageable);
+
+        // Assert
+        assertEquals(1, result.getContent().size());
+        assertEquals("Ensalada César", result.getContent().get(0).getName());
+
+        verify(dishPersistencePort).getDishesByRestaurantAndCategory(restaurantId, category, pageable);
+    }
+
+
 
 }
