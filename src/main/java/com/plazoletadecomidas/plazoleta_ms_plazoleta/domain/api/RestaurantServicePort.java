@@ -9,4 +9,5 @@ public interface RestaurantServicePort {
     Restaurant saveRestaurant(Restaurant restaurant);
     Restaurant getRestaurantById(UUID restaurantId);
     Page<Restaurant> getAllRestaurants(Pageable pageable);
+    void addEmployeeToRestaurant(UUID restaurantId, UUID employeeId);
 }

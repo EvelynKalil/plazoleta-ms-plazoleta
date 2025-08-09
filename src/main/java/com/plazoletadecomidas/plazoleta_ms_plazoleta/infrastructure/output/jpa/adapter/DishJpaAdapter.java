@@ -4,6 +4,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Dish;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.DishEntity;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.RestaurantEmployeeEntity;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.mapper.DishEntityMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.DishRepository;
 import org.springframework.data.domain.Page;

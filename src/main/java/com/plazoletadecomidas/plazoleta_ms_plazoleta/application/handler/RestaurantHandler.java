@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 
 @Service
 public class RestaurantHandler {
@@ -44,4 +46,15 @@ public class RestaurantHandler {
         return servicePort.getAllRestaurants(pageable)
                 .map(mapper::toBasicResponseDto);
     }
+
+    public boolean isOwnerOfRestaurant(UUID restaurantId, UUID ownerId) {
+        Restaurant restaurant = servicePort.getRestaurantById(restaurantId);
+        return restaurant.getOwnerId().equals(ownerId);
+    }
+
+    public void addEmployeeToRestaurant(UUID restaurantId, UUID employeeId) {
+        servicePort.addEmployeeToRestaurant(restaurantId, employeeId);
+    }
+
+
 }
