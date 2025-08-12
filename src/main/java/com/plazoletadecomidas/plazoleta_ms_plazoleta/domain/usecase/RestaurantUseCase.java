@@ -44,4 +44,10 @@ public class RestaurantUseCase implements RestaurantServicePort {
         }
     }
 
+    @Override
+    public boolean isEmployeeOfRestaurant(UUID restaurantId, UUID employeeId) {
+        return persistencePort.isEmployeeOfRestaurant(restaurantId, employeeId);
+    }
+
+
 }

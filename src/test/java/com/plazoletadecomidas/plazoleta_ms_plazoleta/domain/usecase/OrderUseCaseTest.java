@@ -13,6 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -38,6 +42,9 @@ class OrderUseCaseTest {
     private OrderItem item;
     private Order order;
 
+    private UUID orderId;
+    private UUID employeeId;
+
     @BeforeEach
     void setUp() {
         customerId = UUID.randomUUID();
@@ -50,6 +57,9 @@ class OrderUseCaseTest {
         order.setCustomerId(customerId);
         order.setRestaurantId(restaurantId);
         order.setItems(List.of(item));
+
+        orderId = UUID.randomUUID();
+        employeeId = UUID.randomUUID();
     }
 
     @Test
@@ -143,4 +153,56 @@ class OrderUseCaseTest {
         assertNotNull(result.getCreatedAt());
         verify(orderPersistencePort).save(any(Order.class));
     }
+
+    @Test
+    void givenValidRestaurantAndStatus_whenGetOrdersByStatus_thenReturnPage() {
+        Order testOrder = new Order(orderId, customerId, restaurantId, List.of(), "PENDIENTE", LocalDateTime.now(), null);
+        Page<Order> page = new PageImpl<>(List.of(testOrder));
+
+        when(orderPersistencePort.findByRestaurantAndStatus(eq(restaurantId), eq("PENDIENTE"), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<Order> result = orderUseCase.getOrdersByStatus(restaurantId, "PENDIENTE", PageRequest.of(0, 5));
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("PENDIENTE", result.getContent().get(0).getStatus());
+    }
+
+
+    @Test
+    void givenInvalidStatus_whenGetOrdersByStatus_thenThrowException() {
+        PageRequest pageRequest = PageRequest.of(0, 5);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> orderUseCase.getOrdersByStatus(restaurantId, "INVALIDO", pageRequest)
+        );
+    }
+
+    @Test
+    void givenPendingOrder_whenAssignOrder_thenReturnUpdatedOrder() {
+        Order pendingOrder = new Order(orderId, customerId, restaurantId, List.of(), "PENDIENTE", LocalDateTime.now(),null);
+        Order updatedOrder = new Order(orderId, customerId, restaurantId, List.of(), "EN_PREPARACION", LocalDateTime.now(),null);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(pendingOrder);
+        when(orderPersistencePort.assignOrderToEmployee(orderId, employeeId)).thenReturn(updatedOrder);
+
+        Order result = orderUseCase.assignOrderToEmployee(orderId, employeeId);
+
+        assertEquals("EN_PREPARACION", result.getStatus());
+        verify(orderPersistencePort).assignOrderToEmployee(orderId, employeeId);
+    }
+
+    @Test
+    void givenOrderNotPending_whenAssignOrder_thenThrowException() {
+        Order notPendingOrder = new Order(orderId, customerId, restaurantId, List.of(), "EN_PREPARACION", LocalDateTime.now(),null);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(notPendingOrder);
+
+        assertThrows(OrderAlreadyAssignedException.class, () ->
+                orderUseCase.assignOrderToEmployee(orderId, employeeId)
+        );
+
+        verify(orderPersistencePort, never()).assignOrderToEmployee(any(), any());
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper;
 
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
@@ -21,6 +22,7 @@ public class OrderMapper {
                         .map(i -> new OrderItem(UUID.fromString(i.getDishId()), i.getQuantity()))
                         .toList(),
                 null,
+                null,
                 null
         );
     }
@@ -39,4 +41,21 @@ public class OrderMapper {
                 }).toList());
         return dto;
     }
+
+    public OrderDetailResponseDto toDetailResponse(Order order) {
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(order.getId());
+        dto.setCustomerId(order.getCustomerId());
+        dto.setRestaurantId(order.getRestaurantId());
+        dto.setStatus(order.getStatus());
+        dto.setCreatedAt(order.getCreatedAt());
+        dto.setItems(order.getItems().stream().map(i -> {
+            OrderItemDto d = new OrderItemDto();
+            d.setDishId(i.getDishId().toString());
+            d.setQuantity(i.getQuantity());
+            return d;
+        }).toList());
+        return dto;
+    }
+
 }

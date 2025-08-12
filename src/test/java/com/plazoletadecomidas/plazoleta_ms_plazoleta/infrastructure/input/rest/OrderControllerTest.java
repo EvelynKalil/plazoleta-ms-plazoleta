@@ -1,27 +1,40 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+// Hamcrest: SOLO lo que usas
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsString;
+
+// Mockito: está bien usar wildcard aquí
+import static org.mockito.ArgumentMatchers.*;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = OrderController.class)
@@ -32,10 +45,11 @@ class OrderControllerTest {
 
     @MockBean private OrderHandler orderHandler;
 
+    // ---------- POST /orders ----------
+
     @Test
     @DisplayName("POST /orders -> 201 Created cuando la orden es válida")
     void createOrder_ok() throws Exception {
-        // Arrange
         OrderItemDto item = new OrderItemDto();
         item.setDishId(UUID.randomUUID().toString());
         item.setQuantity(2);
@@ -51,7 +65,6 @@ class OrderControllerTest {
         Mockito.when(orderHandler.createOrder(any(OrderRequestDto.class), anyString()))
                 .thenReturn(response);
 
-        // Act & Assert
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer token-ejemplo")
@@ -65,7 +78,6 @@ class OrderControllerTest {
     @Test
     @DisplayName("POST /orders -> 400 Bad Request cuando quantity = 0")
     void createOrder_validation_quantityMin() throws Exception {
-        // Arrange
         OrderItemDto item = new OrderItemDto();
         item.setDishId(UUID.randomUUID().toString());
         item.setQuantity(0); // inválido por @Min(1)
@@ -74,13 +86,11 @@ class OrderControllerTest {
         request.setRestaurantId(UUID.randomUUID().toString());
         request.setItems(List.of(item));
 
-        // Act & Assert (el handler NO se invoca porque falla la validación de DTO)
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer token-ejemplo")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                // depende de tu GlobalExceptionHandler: el field puede ser "items[0].quantity"
                 .andExpect(jsonPath("$.*", not(empty())))
                 .andExpect(jsonPath("$..*", not(empty())));
     }
@@ -123,5 +133,95 @@ class OrderControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", containsString("items duplicados")));
+    }
+
+    // ---------- GET /orders/{restaurantId} ----------
+
+    @Test
+    @DisplayName("GET /orders/{restaurantId} -> 200 OK lista paginada cuando empleado pertenece al restaurante")
+    void listOrdersByStatus_ok() throws Exception {
+        UUID restaurantId = UUID.randomUUID();
+        UUID order1 = UUID.randomUUID();
+        UUID order2 = UUID.randomUUID();
+
+        OrderDetailResponseDto dto1 = new OrderDetailResponseDto();
+        dto1.setId(order1); // setter UUID
+        dto1.setStatus("PENDIENTE");
+
+        OrderDetailResponseDto dto2 = new OrderDetailResponseDto();
+        dto2.setId(order2);
+        dto2.setStatus("PENDIENTE");
+
+        Page<OrderDetailResponseDto> page = new PageImpl<>(
+                List.of(dto1, dto2), PageRequest.of(0, 2), 2
+        );
+
+        Mockito.when(orderHandler.listOrdersByStatus(eq(restaurantId), eq("PENDIENTE"),
+                        eq(0), eq(2), anyString()))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/orders/{restaurantId}", restaurantId)
+                        .param("status", "PENDIENTE")
+                        .param("page", "0")
+                        .param("size", "2")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id", is(order1.toString())))
+                .andExpect(jsonPath("$.content[0].status", is("PENDIENTE")))
+                .andExpect(jsonPath("$.totalElements", is(2)));
+    }
+
+    @Test
+    @DisplayName("GET /orders/{restaurantId} -> 403 Forbidden si el empleado NO pertenece al restaurante")
+    void listOrdersByStatus_unauthorized() throws Exception {
+        UUID restaurantId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.listOrdersByStatus(eq(restaurantId), eq("PENDIENTE"),
+                        anyInt(), anyInt(), anyString()))
+                .thenThrow(new UnauthorizedException("No puedes listar pedidos de un restaurante que no es tuyo."));
+
+        mockMvc.perform(get("/orders/{restaurantId}", restaurantId)
+                        .param("status", "PENDIENTE")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", containsString("No puedes listar pedidos")));
+    }
+
+    // ---------- PUT /orders/{orderId}/assign ----------
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/assign -> 200 OK asigna pedido al empleado")
+    void assignOrder_ok() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        OrderDetailResponseDto detail = new OrderDetailResponseDto();
+        detail.setId(orderId);
+        detail.setStatus("EN_PREPARACION");
+
+        Mockito.when(orderHandler.assignOrder(eq(orderId), anyString()))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/orders/{orderId}/assign", orderId)
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(orderId.toString())))
+                .andExpect(jsonPath("$.status", is("EN_PREPARACION")));
+    }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/assign -> 403 Forbidden si el pedido no pertenece a un restaurante del empleado")
+    void assignOrder_unauthorized() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.assignOrder(eq(orderId), anyString()))
+                .thenThrow(new UnauthorizedException("No puedes asignarte pedidos de otro restaurante"));
+
+        mockMvc.perform(put("/orders/{orderId}/assign", orderId)
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error", containsString("No puedes asignarte pedidos")));
     }
 }

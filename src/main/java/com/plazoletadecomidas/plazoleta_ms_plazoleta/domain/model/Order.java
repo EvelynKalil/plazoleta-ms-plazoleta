@@ -21,5 +21,5 @@ public class Order {
     private List<OrderItem> items;
     private String status; // PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO, CANCELADO
     private LocalDateTime createdAt;
-
+    private UUID assignedEmployeeId;
 }

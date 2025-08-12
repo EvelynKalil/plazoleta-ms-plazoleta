@@ -10,4 +10,5 @@ public interface RestaurantServicePort {
     Restaurant getRestaurantById(UUID restaurantId);
     Page<Restaurant> getAllRestaurants(Pageable pageable);
     void addEmployeeToRestaurant(UUID restaurantId, UUID employeeId);
+    boolean isEmployeeOfRestaurant(UUID restaurantId, UUID employeeId);
 }

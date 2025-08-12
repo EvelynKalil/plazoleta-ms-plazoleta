@@ -1,6 +1,7 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exceptionhandler;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.*;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyAssignedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,8 +14,10 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
     private static final String ERROR_KEY = "error";
 
+    // --- EXCEPCIONES DE NEGOCIO ---
     @ExceptionHandler(RestaurantAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleAlreadyExists(RestaurantAlreadyExistsException ex) {
         return buildError(HttpStatus.CONFLICT, ex.getMessage());
@@ -30,6 +33,32 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(OrderAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleOrderAlreadyExists(OrderAlreadyExistsException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateOrderItemException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateOrderItem(DuplicateOrderItemException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(DishNotFromRestaurantException.class)
+    public ResponseEntity<Map<String, String>> handleDishNotFromRestaurant(DishNotFromRestaurantException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(EmptyOrderException.class)
+    public ResponseEntity<Map<String, String>> handleEmptyOrder(EmptyOrderException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(OrderAlreadyAssignedException.class)
+    public ResponseEntity<Map<String, String>> handleOrderAlreadyAssigned(OrderAlreadyAssignedException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // --- ERRORES DE VALIDACIÓN Y FORMATO ---
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -53,44 +82,17 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(OrderAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleOrderAlreadyExistsException(OrderAlreadyExistsException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put(ERROR_KEY, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-    }
-
-    @ExceptionHandler(DuplicateOrderItemException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicateOrderItemException(DuplicateOrderItemException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put(ERROR_KEY, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(DishNotFromRestaurantException.class)
-    public ResponseEntity<Map<String, String>> handleDishNotFromRestaurantException(DishNotFromRestaurantException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put(ERROR_KEY, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(EmptyOrderException.class)
-    public ResponseEntity<Map<String, String>> handleEmptyOrderException(EmptyOrderException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put(ERROR_KEY, ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
+    // --- EXCEPCIÓN GENÉRICA ---
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
         ex.printStackTrace();
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
     }
 
+    // --- MÉTODO AUXILIAR ---
     private ResponseEntity<Map<String, String>> buildError(HttpStatus status, String message) {
         Map<String, String> error = new HashMap<>();
         error.put(ERROR_KEY, message);
         return ResponseEntity.status(status).body(error);
     }
 }
-

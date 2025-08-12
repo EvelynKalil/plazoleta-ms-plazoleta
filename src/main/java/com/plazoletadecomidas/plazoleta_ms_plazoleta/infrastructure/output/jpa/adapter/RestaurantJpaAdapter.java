@@ -60,5 +60,13 @@ public class RestaurantJpaAdapter implements RestaurantPersistencePort {
     public void saveEmployeeInRestaurant(UUID restaurantId, UUID employeeId) {
         restaurantEmployeeRepository.save(new RestaurantEmployeeEntity(restaurantId, employeeId));
     }
+
+    @Override
+    public boolean isEmployeeOfRestaurant(UUID restaurantId, UUID employeeId) {
+        return repository.isEmployeeOfRestaurant(restaurantId, employeeId);
+    }
+
+
+
 }
 

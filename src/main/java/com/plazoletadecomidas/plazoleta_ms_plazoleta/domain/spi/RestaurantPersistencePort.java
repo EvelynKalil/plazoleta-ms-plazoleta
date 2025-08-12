@@ -11,4 +11,5 @@ public interface RestaurantPersistencePort {
     Page<Restaurant> getAllRestaurants(Pageable pageable);
     boolean existsEmployeeInRestaurant(UUID restaurantId, UUID employeeId);
     void saveEmployeeInRestaurant(UUID restaurantId, UUID employeeId);
+    boolean isEmployeeOfRestaurant(UUID restaurantId, UUID employeeId);
 }

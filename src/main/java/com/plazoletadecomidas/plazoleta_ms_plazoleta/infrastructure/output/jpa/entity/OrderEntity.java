@@ -41,4 +41,6 @@ public class OrderEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItemEntity> items = new ArrayList<>();
 
+    @Column(name = "assigned_employee_id", columnDefinition = "BINARY(16)")
+    private UUID assignedEmployeeId;
 }

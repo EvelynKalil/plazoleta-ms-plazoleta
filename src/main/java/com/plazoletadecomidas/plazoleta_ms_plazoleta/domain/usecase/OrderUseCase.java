@@ -9,7 +9,10 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistence
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DishNotFromRestaurantException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.EmptyOrderException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyAssignedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyExistsException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -18,6 +21,7 @@ import java.util.UUID;
 
 public class OrderUseCase implements OrderServicePort {
 
+    private static final String STATUS_PENDING = "PENDIENTE";
     private final OrderPersistencePort orderPersistencePort;
     private final DishServicePort dishServicePort;
 
@@ -54,10 +58,41 @@ public class OrderUseCase implements OrderServicePort {
         }
 
         // Estado inicial y fecha
-        order.setStatus("PENDIENTE");
+        order.setStatus(STATUS_PENDING);
         order.setCreatedAt(LocalDateTime.now());
 
         // Guardar y devolver
         return orderPersistencePort.save(order);
     }
+
+    @Override
+    public Page<Order> getOrdersByStatus(UUID restaurantId, String status, Pageable pageable) {
+        // Validar estatus permitido (opcionalmente puedes centralizar esto en un Enum)
+        String st = status == null ? "" : status.trim().toUpperCase();
+        if (!(st.equals(STATUS_PENDING) || st.equals("EN_PREPARACION") || st.equals("LISTO"))) {
+            throw new IllegalArgumentException("Estado inválido. Usa: PENDIENTE, EN_PREPARACION o LISTO.");
+        }
+        return orderPersistencePort.findByRestaurantAndStatus(restaurantId, st, pageable);
+    }
+
+    @Override
+    public Order assignOrderToEmployee(UUID orderId, UUID employeeId) {
+        Order order = orderPersistencePort.findById(orderId);
+
+        if (!STATUS_PENDING.equals(order.getStatus())) {
+            throw new OrderAlreadyAssignedException("Solo se pueden asignar pedidos en estado PENDIENTE");
+        }
+
+        return orderPersistencePort.assignOrderToEmployee(orderId, employeeId);
+    }
+
+
+    @Override
+    public Order findById(UUID orderId) {
+        return orderPersistencePort.findById(orderId);
+    }
+
+
+
+
 }

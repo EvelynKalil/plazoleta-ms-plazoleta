@@ -1,4 +1,3 @@
-
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +34,8 @@ class OrderControllerValidationTest {
 
     @MockBean private OrderHandler orderHandler;
 
+    // ---------- Casos sobre restaurantId ----------
+
     @Test
     @DisplayName("400 cuando restaurantId está vacío")
     void createOrder_restaurantIdVacio() throws Exception {
@@ -51,6 +52,24 @@ class OrderControllerValidationTest {
 
         verify(orderHandler, never()).createOrder(any(), anyString());
     }
+
+    @Test
+    @DisplayName("400 cuando restaurantId es null")
+    void createOrder_restaurantIdNull() throws Exception {
+        OrderRequestDto req = new OrderRequestDto();
+        req.setRestaurantId(null); // inválido por @NotEmpty/@NotNull
+        req.setItems(List.of(buildItem(UUID.randomUUID().toString(), 1)));
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer token")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verify(orderHandler, never()).createOrder(any(), anyString());
+    }
+
+    // ---------- Casos sobre items ----------
 
     @Test
     @DisplayName("400 cuando items es null")
@@ -84,12 +103,33 @@ class OrderControllerValidationTest {
         verify(orderHandler, never()).createOrder(any(), anyString());
     }
 
+    // ---------- Casos sobre cada item ----------
+
     @Test
     @DisplayName("400 cuando dishId de un item está vacío")
     void createOrder_dishIdVacio() throws Exception {
         OrderRequestDto req = new OrderRequestDto();
         req.setRestaurantId(UUID.randomUUID().toString());
         req.setItems(List.of(buildItem("", 1))); // inválido por @NotEmpty
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer token")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verify(orderHandler, never()).createOrder(any(), anyString());
+    }
+
+    @Test
+    @DisplayName("400 cuando dishId es null")
+    void createOrder_dishIdNull() throws Exception {
+        OrderItemDto item = buildItem(UUID.randomUUID().toString(), 1);
+        item.setDishId(null); // inválido por @NotEmpty/@NotNull
+
+        OrderRequestDto req = new OrderRequestDto();
+        req.setRestaurantId(UUID.randomUUID().toString());
+        req.setItems(List.of(item));
 
         mockMvc.perform(post("/orders")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -115,6 +155,24 @@ class OrderControllerValidationTest {
 
         verify(orderHandler, never()).createOrder(any(), anyString());
     }
+
+    @Test
+    @DisplayName("400 cuando quantity es negativo")
+    void createOrder_quantityNegativo() throws Exception {
+        OrderRequestDto req = new OrderRequestDto();
+        req.setRestaurantId(UUID.randomUUID().toString());
+        req.setItems(List.of(buildItem(UUID.randomUUID().toString(), -3))); // inválido por @Min(1)
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer token")
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+
+        verify(orderHandler, never()).createOrder(any(), anyString());
+    }
+
+    // ---------- Util ----------
 
     private OrderItemDto buildItem(String dishId, int quantity) {
         OrderItemDto i = new OrderItemDto();

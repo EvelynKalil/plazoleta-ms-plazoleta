@@ -3,16 +3,17 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderItem;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistencePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.NotFoundException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.OrderEntity;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity.OrderItemEntity;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -46,7 +47,7 @@ public class OrderJpaAdapter implements OrderPersistencePort {
                     e.setOrder(entity); // vínculo bidireccional
                     return e;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         entity.setItems(itemEntities);
 
@@ -56,7 +57,7 @@ public class OrderJpaAdapter implements OrderPersistencePort {
         // Mapear de vuelta al dominio
         List<OrderItem> domainItems = saved.getItems().stream()
                 .map(i -> new OrderItem(i.getDishId(), i.getQuantity()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new Order(
                 saved.getId(),
@@ -64,7 +65,58 @@ public class OrderJpaAdapter implements OrderPersistencePort {
                 saved.getRestaurantId(),
                 domainItems,
                 saved.getStatus(),
-                saved.getCreatedAt()
+                saved.getCreatedAt(),
+                saved.getAssignedEmployeeId()
         );
     }
+
+    @Override
+    public Page<Order> findByRestaurantAndStatus(UUID restaurantId, String status, Pageable pageable) {
+        Page<OrderEntity> page = orderRepository.findByRestaurantIdAndStatus(restaurantId, status, pageable);
+
+        return page.map(saved -> new Order(
+                saved.getId(),
+                saved.getCustomerId(),
+                saved.getRestaurantId(),
+                saved.getItems().stream()
+                        .map(i -> new com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderItem(
+                                i.getDishId(), i.getQuantity()))
+                        .toList(),
+                saved.getStatus(),
+                saved.getCreatedAt(),
+                saved.getAssignedEmployeeId()
+        ));
+    }
+
+    @Override
+    public Order assignOrderToEmployee(UUID orderId, UUID employeeId) {
+        int updated = orderRepository.assignOrderToEmployee(orderId, employeeId);
+        if (updated == 0) {
+            throw new NotFoundException("Pedido no encontrado o no se pudo asignar");
+        }
+        return findById(orderId); // Aquí devuelves el pedido actualizado
+    }
+
+
+    @Override
+    public Order findById(UUID orderId) {
+        OrderEntity saved = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Pedido no encontrado"));
+
+        List<OrderItem> domainItems = saved.getItems().stream()
+                .map(i -> new OrderItem(i.getDishId(), i.getQuantity()))
+                .toList();
+
+        return new Order(
+                saved.getId(),
+                saved.getCustomerId(),
+                saved.getRestaurantId(),
+                domainItems,
+                saved.getStatus(),
+                saved.getCreatedAt(),
+                saved.getAssignedEmployeeId()
+        );
+    }
+
+
 }
