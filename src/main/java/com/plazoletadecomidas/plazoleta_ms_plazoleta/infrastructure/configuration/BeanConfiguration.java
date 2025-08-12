@@ -1,8 +1,10 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.DishServicePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.NotificationServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.UserServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
@@ -33,7 +35,10 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public OrderServicePort orderServicePort(OrderPersistencePort orderPersistencePort, DishServicePort dishServicePort) {
-        return new OrderUseCase(orderPersistencePort, dishServicePort);
+    public OrderServicePort orderServicePort(OrderPersistencePort orderPersistencePort,
+                                             DishServicePort dishServicePort,
+                                             NotificationServicePort notificationServicePort,
+                                             UserServicePort userServicePort ) {
+        return new OrderUseCase(orderPersistencePort, dishServicePort, notificationServicePort, userServicePort);
     }
 }

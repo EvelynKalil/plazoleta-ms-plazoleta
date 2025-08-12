@@ -1,5 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.entity;
 
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
@@ -7,6 +8,8 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -34,7 +37,8 @@ public class OrderEntity {
     private UUID restaurantId;
 
     @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
     private LocalDateTime createdAt;
 

@@ -48,4 +48,14 @@ public class OrderController {
     ) {
         return ResponseEntity.ok(handler.assignOrder(orderId, token));
     }
+
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<OrderDetailResponseDto> updateStatus(
+            @PathVariable UUID orderId,
+            @RequestParam String status, // ej: LISTO, ENTREGADO, CANCELADO
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        return ResponseEntity.ok(handler.updateOrderStatus(orderId, status, token));
+    }
+
 }

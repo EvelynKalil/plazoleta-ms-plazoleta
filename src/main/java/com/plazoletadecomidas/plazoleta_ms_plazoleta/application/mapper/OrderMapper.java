@@ -30,7 +30,7 @@ public class OrderMapper {
     public OrderResponseDto toResponse(Order order) {
         OrderResponseDto dto = new OrderResponseDto();
         dto.setId(order.getId().toString());
-        dto.setStatus(order.getStatus());
+        dto.setStatus(order.getStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
         dto.setItems(order.getItems().stream()
                 .map(i -> {
@@ -47,7 +47,7 @@ public class OrderMapper {
         dto.setId(order.getId());
         dto.setCustomerId(order.getCustomerId());
         dto.setRestaurantId(order.getRestaurantId());
-        dto.setStatus(order.getStatus());
+        dto.setStatus(order.getStatus().name());
         dto.setCreatedAt(order.getCreatedAt());
         dto.setItems(order.getItems().stream().map(i -> {
             OrderItemDto d = new OrderItemDto();

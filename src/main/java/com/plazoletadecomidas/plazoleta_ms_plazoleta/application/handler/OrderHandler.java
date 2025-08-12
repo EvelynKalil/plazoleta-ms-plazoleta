@@ -7,6 +7,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.OrderMap
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
@@ -77,6 +78,20 @@ public class OrderHandler {
         return orderMapper.toDetailResponse(updated);
     }
 
+    public OrderDetailResponseDto updateOrderStatus(UUID orderId, String status, String token) {
+        UUID employeeId = authValidator.validate(token, Role.EMPLEADO);
+
+        OrderStatus newStatus;
+        try {
+            newStatus = OrderStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Estado inválido. Usa: PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO o CANCELADO");
+        }
+
+        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, newStatus);
+
+        return orderMapper.toDetailResponse(updated);
+    }
 
 
 }

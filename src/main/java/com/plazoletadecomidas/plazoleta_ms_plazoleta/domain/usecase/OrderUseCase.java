@@ -1,10 +1,13 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase;
 
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.NotificationServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.DishServicePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.UserServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Dish;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderItem;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DishNotFromRestaurantException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
@@ -21,13 +24,19 @@ import java.util.UUID;
 
 public class OrderUseCase implements OrderServicePort {
 
-    private static final String STATUS_PENDING = "PENDIENTE";
     private final OrderPersistencePort orderPersistencePort;
     private final DishServicePort dishServicePort;
+    private final NotificationServicePort notificationServicePort;
+    private final UserServicePort userServicePort;
 
-    public OrderUseCase(OrderPersistencePort orderPersistencePort, DishServicePort dishServicePort) {
+    public OrderUseCase(OrderPersistencePort orderPersistencePort,
+                        DishServicePort dishServicePort,
+                        NotificationServicePort notificationServicePort,
+                        UserServicePort userServicePort) {
         this.orderPersistencePort = orderPersistencePort;
         this.dishServicePort = dishServicePort;
+        this.notificationServicePort = notificationServicePort;
+        this.userServicePort = userServicePort;
     }
 
     @Override
@@ -57,42 +66,83 @@ public class OrderUseCase implements OrderServicePort {
             }
         }
 
-        // Estado inicial y fecha
-        order.setStatus(STATUS_PENDING);
+        // Estado inicial y fecha (ahora con enum)
+        order.setStatus(OrderStatus.PENDIENTE);
         order.setCreatedAt(LocalDateTime.now());
 
         // Guardar y devolver
         return orderPersistencePort.save(order);
     }
 
+
     @Override
     public Page<Order> getOrdersByStatus(UUID restaurantId, String status, Pageable pageable) {
-        // Validar estatus permitido (opcionalmente puedes centralizar esto en un Enum)
-        String st = status == null ? "" : status.trim().toUpperCase();
-        if (!(st.equals(STATUS_PENDING) || st.equals("EN_PREPARACION") || st.equals("LISTO"))) {
+        if (status == null) {
+            throw new IllegalArgumentException("El estado no puede ser nulo.");
+        }
+
+        OrderStatus st;
+        try {
+            st = OrderStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Estado inválido. Usa: PENDIENTE, EN_PREPARACION o LISTO.");
         }
+
         return orderPersistencePort.findByRestaurantAndStatus(restaurantId, st, pageable);
     }
 
     @Override
     public Order assignOrderToEmployee(UUID orderId, UUID employeeId) {
         Order order = orderPersistencePort.findById(orderId);
-
-        if (!STATUS_PENDING.equals(order.getStatus())) {
+        if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
             throw new OrderAlreadyAssignedException("Solo se pueden asignar pedidos en estado PENDIENTE");
         }
-
         return orderPersistencePort.assignOrderToEmployee(orderId, employeeId);
     }
-
 
     @Override
     public Order findById(UUID orderId) {
         return orderPersistencePort.findById(orderId);
     }
 
+    @Override
+    public Order updateOrderStatus(UUID orderId, UUID employeeId, OrderStatus newStatus) {
+        Order order = orderPersistencePort.findById(orderId);
 
+        // Validaciones de flujo (ya las tienes)
+        switch (newStatus) {
+            case EN_PREPARACION:
+                if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
+                    throw new IllegalArgumentException("Solo se puede pasar de PENDIENTE a EN_PREPARACION");
+                }
+                break;
+            case LISTO:
+                if (!OrderStatus.EN_PREPARACION.equals(order.getStatus())) {
+                    throw new IllegalArgumentException("Solo se puede pasar de EN_PREPARACION a LISTO");
+                }
+                // 🔹 Generar PIN y obtener teléfono
+                String pin = String.format("%04d", new java.util.Random().nextInt(10000));
+                String phone = userServicePort.getUserPhone(order.getCustomerId());
 
+                // 🔹 Llamar a microservicio (aquí será el No-Op)
+                notificationServicePort.notifyOrderReady(phone,
+                        "Tu pedido está listo. PIN: " + pin);
+                break;
+            case ENTREGADO:
+                if (!OrderStatus.LISTO.equals(order.getStatus())) {
+                    throw new IllegalArgumentException("Solo se puede pasar de LISTO a ENTREGADO");
+                }
+                break;
+            case CANCELADO:
+                if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
+                    throw new IllegalArgumentException("Solo se puede cancelar pedidos PENDIENTE");
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Transición de estado no permitida");
+        }
 
+        order.setStatus(newStatus);
+        return orderPersistencePort.updateOrderStatus(orderId, newStatus);
+    }
 }

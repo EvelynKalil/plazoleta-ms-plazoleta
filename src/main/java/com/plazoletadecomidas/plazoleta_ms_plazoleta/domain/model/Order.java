@@ -19,7 +19,7 @@ public class Order {
     private UUID customerId;
     private UUID restaurantId;
     private List<OrderItem> items;
-    private String status; // PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO, CANCELADO
+    private OrderStatus status;
     private LocalDateTime createdAt;
     private UUID assignedEmployeeId;
 }
