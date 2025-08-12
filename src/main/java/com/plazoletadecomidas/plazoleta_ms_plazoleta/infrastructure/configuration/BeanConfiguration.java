@@ -1,11 +1,16 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.DishServicePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.DishPersistencePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.DishUseCase;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.OrderUseCase;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.RestaurantUseCase;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.adapter.OrderJpaAdapter;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.OrderRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,5 +27,13 @@ public class BeanConfiguration {
         return new DishUseCase(dishPersistencePort, restaurantServicePort);
     }
 
+    @Bean
+    public OrderPersistencePort orderPersistencePort(OrderRepository orderRepository) {
+        return new OrderJpaAdapter(orderRepository);
+    }
 
+    @Bean
+    public OrderServicePort orderServicePort(OrderPersistencePort orderPersistencePort, DishServicePort dishServicePort) {
+        return new OrderUseCase(orderPersistencePort, dishServicePort);
+    }
 }

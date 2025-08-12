@@ -55,8 +55,6 @@ public class RestaurantController {
             @RequestBody AddEmployeeRequest body,
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        // (Opcional) volver a validar rol propietario aquí con tu AuthValidator si quieres doble cerrojo
-        // authValidator.validate(token, Role.PROPIETARIO);
         handler.addEmployeeToRestaurant(restaurantId, body.getEmployeeId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

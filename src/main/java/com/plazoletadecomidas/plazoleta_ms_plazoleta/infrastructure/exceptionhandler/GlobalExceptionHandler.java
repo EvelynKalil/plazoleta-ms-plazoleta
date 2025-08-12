@@ -13,6 +13,7 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    private static final String ERROR_KEY = "error";
 
     @ExceptionHandler(RestaurantAlreadyExistsException.class)
     public ResponseEntity<Map<String, String>> handleAlreadyExists(RestaurantAlreadyExistsException ex) {
@@ -49,18 +50,46 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        return buildError(HttpStatus.BAD_REQUEST, "Parámetro inválido.");
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(OrderAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleOrderAlreadyExistsException(OrderAlreadyExistsException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put(ERROR_KEY, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(DuplicateOrderItemException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateOrderItemException(DuplicateOrderItemException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put(ERROR_KEY, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(DishNotFromRestaurantException.class)
+    public ResponseEntity<Map<String, String>> handleDishNotFromRestaurantException(DishNotFromRestaurantException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put(ERROR_KEY, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(EmptyOrderException.class)
+    public ResponseEntity<Map<String, String>> handleEmptyOrderException(EmptyOrderException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put(ERROR_KEY, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
-        ex.printStackTrace(); //Quitar en producción
+        ex.printStackTrace();
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
     }
 
     private ResponseEntity<Map<String, String>> buildError(HttpStatus status, String message) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", message);
+        error.put(ERROR_KEY, message);
         return ResponseEntity.status(status).body(error);
     }
 }
