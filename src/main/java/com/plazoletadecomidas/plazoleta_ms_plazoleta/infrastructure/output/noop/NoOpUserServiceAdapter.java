@@ -9,8 +9,10 @@ import java.util.UUID;
 @Component
 @Profile("!users-feign")
 public class NoOpUserServiceAdapter implements UserServicePort {
-    @Override public String getUserPhone(UUID userId) {
+    @Override
+    public String getPhone(UUID userId) {
         return "+573000000000";
     }
 }
+
 

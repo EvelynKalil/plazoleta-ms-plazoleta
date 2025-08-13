@@ -8,12 +8,15 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 @Component
-@Profile("users-feign")
 @RequiredArgsConstructor
 public class UsersFeignAdapter implements UserServicePort {
-    private final UsersClient client;
-    @Override public String getUserPhone(UUID userId) {
-        var resp = client.getUserById(userId.toString());
-        return resp != null ? resp.phone : null;
+
+    private final UsersClient usersClient;
+
+    @Override
+    public String getPhone(UUID userId) {
+        return usersClient.getPhone(userId).getPhone();
     }
 }
+
+

@@ -122,7 +122,7 @@ public class OrderUseCase implements OrderServicePort {
                 }
                 // 🔹 Generar PIN y obtener teléfono
                 String pin = String.format("%04d", new java.util.Random().nextInt(10000));
-                String phone = userServicePort.getUserPhone(order.getCustomerId());
+                String phone = userServicePort.getPhone(order.getCustomerId());
 
                 // 🔹 Llamar a microservicio (aquí será el No-Op)
                 notificationServicePort.notifyOrderReady(phone,
