@@ -9,12 +9,12 @@ import java.util.UUID;
 public interface OrderPersistencePort {
     boolean existsActiveOrderByCustomer(UUID customerId);
     Order save(Order order);
-
     Page<Order> findByRestaurantAndStatus(UUID restaurantId, OrderStatus status, Pageable pageable);
-
 
     Order findById(UUID orderId);
     Order assignOrderToEmployee(UUID orderId, UUID employeeId);
 
     Order updateOrderStatus(UUID orderId, OrderStatus newStatus);
+    Order updateStatusAndPin(UUID orderId, OrderStatus newStatus, String pin);
+    Order updateStatusAndClearPin(UUID orderId, OrderStatus newStatus);
 }

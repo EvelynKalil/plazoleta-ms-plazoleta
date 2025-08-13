@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,6 +29,7 @@ public class OrderUseCase implements OrderServicePort {
     private final DishServicePort dishServicePort;
     private final NotificationServicePort notificationServicePort;
     private final UserServicePort userServicePort;
+    private static final Random RANDOM = new Random();
 
     public OrderUseCase(OrderPersistencePort orderPersistencePort,
                         DishServicePort dishServicePort,
@@ -109,40 +111,38 @@ public class OrderUseCase implements OrderServicePort {
     public Order updateOrderStatus(UUID orderId, UUID employeeId, OrderStatus newStatus) {
         Order order = orderPersistencePort.findById(orderId);
 
-        // Validaciones de flujo (ya las tienes)
         switch (newStatus) {
             case EN_PREPARACION:
-                if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
+                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
                     throw new IllegalArgumentException("Solo se puede pasar de PENDIENTE a EN_PREPARACION");
-                }
-                break;
-            case LISTO:
-                if (!OrderStatus.EN_PREPARACION.equals(order.getStatus())) {
-                    throw new IllegalArgumentException("Solo se puede pasar de EN_PREPARACION a LISTO");
-                }
-                // 🔹 Generar PIN y obtener teléfono
-                String pin = String.format("%04d", new java.util.Random().nextInt(10000));
-                String phone = userServicePort.getPhone(order.getCustomerId());
+                return orderPersistencePort.updateOrderStatus(orderId, newStatus);
 
-                // 🔹 Llamar a microservicio (aquí será el No-Op)
+            case LISTO:
+                if (!OrderStatus.EN_PREPARACION.equals(order.getStatus()))
+                    throw new IllegalArgumentException("Solo se puede pasar de EN_PREPARACION a LISTO");
+
+                String pin = String.format("%04d", RANDOM.nextInt(10000)); // Usar constante
+
+                Order updated = orderPersistencePort.updateStatusAndPin(orderId, OrderStatus.LISTO, pin);
+
+                String phone = userServicePort.getPhone(updated.getCustomerId());
                 notificationServicePort.notifyOrderReady(phone,
-                        "Tu pedido está listo. PIN: " + pin);
-                break;
+                        "Tu pedido " + updated.getId() + " está LISTO. PIN: " + pin);
+
+                return updated;
+
             case ENTREGADO:
-                if (!OrderStatus.LISTO.equals(order.getStatus())) {
+                if (!OrderStatus.LISTO.equals(order.getStatus()))
                     throw new IllegalArgumentException("Solo se puede pasar de LISTO a ENTREGADO");
-                }
-                break;
+                return orderPersistencePort.updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO);
+
             case CANCELADO:
-                if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
+                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
                     throw new IllegalArgumentException("Solo se puede cancelar pedidos PENDIENTE");
-                }
-                break;
+                return orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO);
+
             default:
                 throw new IllegalArgumentException("Transición de estado no permitida");
         }
-
-        order.setStatus(newStatus);
-        return orderPersistencePort.updateOrderStatus(orderId, newStatus);
     }
 }

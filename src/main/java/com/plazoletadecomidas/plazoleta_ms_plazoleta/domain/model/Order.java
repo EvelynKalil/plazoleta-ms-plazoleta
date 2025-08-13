@@ -22,4 +22,6 @@ public class Order {
     private OrderStatus status;
     private LocalDateTime createdAt;
     private UUID assignedEmployeeId;
+    private String securityPin;
 }
+

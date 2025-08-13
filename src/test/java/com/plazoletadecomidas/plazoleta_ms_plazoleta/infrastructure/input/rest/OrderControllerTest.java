@@ -224,4 +224,40 @@ class OrderControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error", containsString("No puedes asignarte pedidos")));
     }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/status -> 200 OK cuando el cambio de estado es válido")
+    void updateStatus_ok() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        OrderDetailResponseDto detail = new OrderDetailResponseDto();
+        detail.setId(orderId);
+        detail.setStatus("LISTO");
+
+        Mockito.when(orderHandler.updateOrderStatus(eq(orderId), eq("LISTO"), anyString()))
+                .thenReturn(detail);
+
+        mockMvc.perform(put("/orders/{orderId}/status", orderId)
+                        .param("status", "LISTO")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(orderId.toString())))
+                .andExpect(jsonPath("$.status", is("LISTO")));
+    }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/status -> 400 Bad Request cuando el estado es inválido")
+    void updateStatus_invalidStatus() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.updateOrderStatus(eq(orderId), eq("INVALIDO"), anyString()))
+                .thenThrow(new IllegalArgumentException("Estado inválido. Usa: PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO o CANCELADO"));
+
+        mockMvc.perform(put("/orders/{orderId}/status", orderId)
+                        .param("status", "INVALIDO")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Estado inválido")));
+    }
 }

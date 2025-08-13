@@ -2,7 +2,6 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.client;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.UserServicePort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;

@@ -1,7 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.client;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.NotificationServicePort;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.client.MessagingClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

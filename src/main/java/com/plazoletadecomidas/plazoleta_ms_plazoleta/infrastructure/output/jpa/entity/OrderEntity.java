@@ -47,4 +47,7 @@ public class OrderEntity {
 
     @Column(name = "assigned_employee_id", columnDefinition = "BINARY(16)")
     private UUID assignedEmployeeId;
+
+    @Column(name = "security_pin", length = 8)
+    private String securityPin;
 }

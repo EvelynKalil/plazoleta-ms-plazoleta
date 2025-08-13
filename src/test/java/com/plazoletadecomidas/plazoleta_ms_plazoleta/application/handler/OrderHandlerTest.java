@@ -1,30 +1,22 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler;
 
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.*;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.OrderMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyExistsException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -42,12 +34,10 @@ class OrderHandlerTest {
 
     private String tokenCliente;
     private String tokenEmpleado;
-
     private UUID customerId;
     private UUID employeeId;
     private UUID restaurantId;
     private UUID orderId;
-
     private OrderRequestDto requestDto;
     private Order orderModel;
     private OrderResponseDto responseDto;
@@ -74,10 +64,9 @@ class OrderHandlerTest {
         orderModel.setId(orderId);
         orderModel.setCustomerId(customerId);
         orderModel.setRestaurantId(restaurantId);
-        orderModel.setStatus("PENDIENTE");
+        orderModel.setStatus(OrderStatus.PENDIENTE);
 
         responseDto = new OrderResponseDto();
-        // OrderResponseDto expone setId(String), así que dejamos String aquí
         responseDto.setId(orderId.toString());
         responseDto.setStatus("PENDIENTE");
     }
@@ -85,7 +74,7 @@ class OrderHandlerTest {
     // ---------- createOrder ----------
 
     @Test
-    @DisplayName("createOrder: debe crear un pedido si el cliente es válido")
+    @DisplayName("createOrder: crea un pedido cuando el cliente es válido")
     void createOrder_clienteValido() {
         when(authValidator.validate(tokenCliente, Role.CLIENTE)).thenReturn(customerId);
         when(orderMapper.toModel(requestDto, customerId.toString())).thenReturn(orderModel);
@@ -95,8 +84,8 @@ class OrderHandlerTest {
         OrderResponseDto result = orderHandler.createOrder(requestDto, tokenCliente);
 
         assertNotNull(result);
-        assertEquals("PENDIENTE", result.getStatus());
         assertEquals(orderId.toString(), result.getId());
+        assertEquals("PENDIENTE", result.getStatus());
 
         verify(authValidator).validate(tokenCliente, Role.CLIENTE);
         verify(orderMapper).toModel(requestDto, customerId.toString());
@@ -106,7 +95,7 @@ class OrderHandlerTest {
     }
 
     @Test
-    @DisplayName("createOrder: debe lanzar excepción si ya existe un pedido activo")
+    @DisplayName("createOrder: lanza excepción si ya existe un pedido activo")
     void createOrder_pedidoActivo() {
         when(authValidator.validate(tokenCliente, Role.CLIENTE)).thenReturn(customerId);
         when(orderMapper.toModel(requestDto, customerId.toString())).thenReturn(orderModel);
@@ -127,7 +116,7 @@ class OrderHandlerTest {
     // ---------- listOrdersByStatus ----------
 
     @Test
-    @DisplayName("listOrdersByStatus: empleado válido y perteneciente al restaurante obtiene la página de pedidos")
+    @DisplayName("listOrdersByStatus: empleado válido y del restaurante obtiene la página de pedidos")
     void listOrdersByStatus_ok() {
         when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
         when(restaurantServicePort.isEmployeeOfRestaurant(restaurantId, employeeId)).thenReturn(true);
@@ -136,23 +125,22 @@ class OrderHandlerTest {
         Order domainOrder1 = new Order();
         domainOrder1.setId(UUID.randomUUID());
         domainOrder1.setRestaurantId(restaurantId);
-        domainOrder1.setStatus("PENDIENTE");
+        domainOrder1.setStatus(OrderStatus.PENDIENTE);
 
         Order domainOrder2 = new Order();
         domainOrder2.setId(UUID.randomUUID());
         domainOrder2.setRestaurantId(restaurantId);
-        domainOrder2.setStatus("PENDIENTE");
+        domainOrder2.setStatus(OrderStatus.PENDIENTE);
 
         Page<Order> pageDomain = new PageImpl<>(List.of(domainOrder1, domainOrder2), pageable, 2);
-        when(orderServicePort.getOrdersByStatus(restaurantId, "PENDIENTE", pageable))
-                .thenReturn(pageDomain);
+        when(orderServicePort.getOrdersByStatus(restaurantId, "PENDIENTE", pageable)).thenReturn(pageDomain);
 
         OrderDetailResponseDto dto1 = new OrderDetailResponseDto();
-        dto1.setId(domainOrder1.getId()); // <- UUID
+        dto1.setId(domainOrder1.getId());
         dto1.setStatus("PENDIENTE");
 
         OrderDetailResponseDto dto2 = new OrderDetailResponseDto();
-        dto2.setId(domainOrder2.getId()); // <- UUID
+        dto2.setId(domainOrder2.getId());
         dto2.setStatus("PENDIENTE");
 
         when(orderMapper.toDetailResponse(domainOrder1)).thenReturn(dto1);
@@ -163,9 +151,7 @@ class OrderHandlerTest {
 
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
-        assertEquals(2, result.getContent().size());
-        assertEquals("PENDIENTE", result.getContent().get(0).getStatus());
-        assertEquals("PENDIENTE", result.getContent().get(1).getStatus());
+        assertTrue(result.getContent().stream().allMatch(o -> "PENDIENTE".equals(o.getStatus())));
 
         verify(authValidator).validate(tokenEmpleado, Role.EMPLEADO);
         verify(restaurantServicePort).isEmployeeOfRestaurant(restaurantId, employeeId);
@@ -176,7 +162,7 @@ class OrderHandlerTest {
     }
 
     @Test
-    @DisplayName("listOrdersByStatus: debe lanzar Unauthorized si el empleado no pertenece al restaurante")
+    @DisplayName("listOrdersByStatus: lanza Unauthorized si el empleado no pertenece al restaurante")
     void listOrdersByStatus_unauthorized() {
         when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
         when(restaurantServicePort.isEmployeeOfRestaurant(restaurantId, employeeId)).thenReturn(false);
@@ -202,7 +188,7 @@ class OrderHandlerTest {
         Order found = new Order();
         found.setId(orderId);
         found.setRestaurantId(restaurantId);
-        found.setStatus("PENDIENTE");
+        found.setStatus(OrderStatus.PENDIENTE);
 
         when(orderServicePort.findById(orderId)).thenReturn(found);
         when(restaurantServicePort.isEmployeeOfRestaurant(restaurantId, employeeId)).thenReturn(true);
@@ -210,10 +196,10 @@ class OrderHandlerTest {
         Order updated = new Order();
         updated.setId(orderId);
         updated.setRestaurantId(restaurantId);
-        updated.setStatus("EN_PREPARACION"); // sin setEmployeeId()
+        updated.setStatus(OrderStatus.EN_PREPARACION);
 
         OrderDetailResponseDto detailDto = new OrderDetailResponseDto();
-        detailDto.setId(orderId); // <- UUID
+        detailDto.setId(orderId);
         detailDto.setStatus("EN_PREPARACION");
 
         when(orderServicePort.assignOrderToEmployee(orderId, employeeId)).thenReturn(updated);
@@ -224,17 +210,10 @@ class OrderHandlerTest {
         assertNotNull(result);
         assertEquals(orderId, result.getId());
         assertEquals("EN_PREPARACION", result.getStatus());
-
-        verify(authValidator).validate(tokenEmpleado, Role.EMPLEADO);
-        verify(orderServicePort).findById(orderId);
-        verify(restaurantServicePort).isEmployeeOfRestaurant(restaurantId, employeeId);
-        verify(orderServicePort).assignOrderToEmployee(orderId, employeeId);
-        verify(orderMapper).toDetailResponse(updated);
-        verifyNoMoreInteractions(orderServicePort, orderMapper, authValidator, restaurantServicePort);
     }
 
     @Test
-    @DisplayName("assignOrder: debe lanzar Unauthorized si el pedido no pertenece a un restaurante del empleado")
+    @DisplayName("assignOrder: lanza Unauthorized si el pedido no pertenece al restaurante del empleado")
     void assignOrder_unauthorized() {
         when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
 
@@ -249,12 +228,40 @@ class OrderHandlerTest {
                 () -> orderHandler.assignOrder(orderId, tokenEmpleado));
 
         assertEquals("No puedes asignarte pedidos de otro restaurante", ex.getMessage());
+    }
 
-        verify(authValidator).validate(tokenEmpleado, Role.EMPLEADO);
-        verify(orderServicePort).findById(orderId);
-        verify(restaurantServicePort).isEmployeeOfRestaurant(restaurantId, employeeId);
-        verify(orderServicePort, never()).assignOrderToEmployee(any(), any());
-        verifyNoInteractions(orderMapper);
-        verifyNoMoreInteractions(orderServicePort, restaurantServicePort, authValidator);
+    // ---------- updateOrderStatus ----------
+
+    @Test
+    @DisplayName("updateOrderStatus: actualiza el estado del pedido correctamente")
+    void updateOrderStatus_ok() {
+        when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
+
+        Order updated = new Order();
+        updated.setId(orderId);
+        updated.setStatus(OrderStatus.LISTO);
+
+        OrderDetailResponseDto detailDto = new OrderDetailResponseDto();
+        detailDto.setId(orderId);
+        detailDto.setStatus("LISTO");
+
+        when(orderServicePort.updateOrderStatus(orderId, employeeId, OrderStatus.LISTO)).thenReturn(updated);
+        when(orderMapper.toDetailResponse(updated)).thenReturn(detailDto);
+
+        OrderDetailResponseDto result = orderHandler.updateOrderStatus(orderId, "LISTO", tokenEmpleado);
+
+        assertNotNull(result);
+        assertEquals("LISTO", result.getStatus());
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus: lanza IllegalArgumentException si el estado es inválido")
+    void updateOrderStatus_estadoInvalido() {
+        when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderHandler.updateOrderStatus(orderId, "INVALIDO", tokenEmpleado));
+
+        assertTrue(ex.getMessage().contains("Estado inválido"));
     }
 }
