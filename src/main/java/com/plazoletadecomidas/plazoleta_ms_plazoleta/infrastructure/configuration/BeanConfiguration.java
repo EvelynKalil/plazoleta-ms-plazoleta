@@ -13,10 +13,14 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.OrderUseCase
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase.RestaurantUseCase;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.adapter.OrderJpaAdapter;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.output.jpa.repository.OrderRepository;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@EnableFeignClients(basePackages = {
+        "com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.client"
+})
 public class BeanConfiguration {
 
     @Bean
