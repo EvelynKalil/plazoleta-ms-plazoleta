@@ -58,4 +58,13 @@ public class OrderController {
         return ResponseEntity.ok(handler.updateOrderStatus(orderId, status, token));
     }
 
+    @PutMapping("/{orderId}/deliver")
+    public ResponseEntity<OrderDetailResponseDto> deliver(
+            @PathVariable UUID orderId,
+            @RequestParam String pin,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        return ResponseEntity.ok(handler.deliverOrder(orderId, pin, token));
+    }
+
 }

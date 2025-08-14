@@ -7,10 +7,11 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@Profile("!messaging-feign") // por defecto
+@Profile("!notifications-feign")
 public class NoOpNotificationAdapter implements NotificationServicePort {
     @Override
-    public void notifyOrderReady(String phoneNumber, String message) {
-        log.info("Simulando envío a {}: {}", phoneNumber, message);
+    public void notifyOrderReady(String phoneNumber, String orderId, String reference) {
+        log.info("Simulando envío de notificación a {}: Pedido {}, referencia {}",
+                phoneNumber, orderId, reference);
     }
 }

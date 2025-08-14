@@ -222,4 +222,54 @@ class OrderUseCaseTest {
         verify(orderPersistencePort, never()).assignOrderToEmployee(any(), any());
     }
 
+    @Test
+    @DisplayName("updateOrderStatus: estado LISTO y PIN correcto → ENTREGADO")
+    void updateOrderStatus_entregado_ok() {
+        String pin = "1234";
+        Order listo = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, pin);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(listo);
+        when(orderPersistencePort.updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO))
+                .thenAnswer(inv -> {
+                    listo.setStatus(OrderStatus.ENTREGADO);
+                    listo.setSecurityPin(null);
+                    return listo;
+                });
+
+        Order result = orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
+
+        assertEquals(OrderStatus.ENTREGADO, result.getStatus());
+        assertNull(result.getSecurityPin());
+        verify(orderPersistencePort).updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO);
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus: estado LISTO pero PIN no coincide → InvalidPinException")
+    void updateOrderStatus_entregado_pinInvalido() {
+        Order listo = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, "1234");
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(listo);
+
+        assertThrows(InvalidPinException.class, () ->
+                orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO)
+        );
+
+        verify(orderPersistencePort, never()).updateStatusAndClearPin(any(), any());
+    }
+
+    @Test
+    @DisplayName("updateOrderStatus: estado distinto de LISTO → IllegalArgumentException")
+    void updateOrderStatus_entregado_estadoInvalido() {
+        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), employeeId, "1234");
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(enPrep);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO)
+        );
+
+        verify(orderPersistencePort, never()).updateStatusAndClearPin(any(), any());
+    }
+
+
 }

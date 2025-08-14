@@ -7,6 +7,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderReques
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -260,4 +261,55 @@ class OrderControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error", containsString("Estado inválido")));
     }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/deliver -> 200 OK cuando PIN válido")
+    void deliver_ok() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(orderId);
+        dto.setStatus("ENTREGADO");
+
+        Mockito.when(orderHandler.deliverOrder(eq(orderId), eq("1234"), anyString()))
+                .thenReturn(dto);
+
+        mockMvc.perform(put("/orders/{orderId}/deliver", orderId)
+                        .param("pin", "1234")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(orderId.toString())))
+                .andExpect(jsonPath("$.status", is("ENTREGADO")));
+    }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/deliver -> 400 Bad Request cuando PIN inválido")
+    void deliver_invalidPin() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.deliverOrder(eq(orderId), eq("9999"), anyString()))
+                .thenThrow(new InvalidPinException());
+
+        mockMvc.perform(put("/orders/{orderId}/deliver", orderId)
+                        .param("pin", "9999")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("PIN inválido")));
+    }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/deliver -> 400 Bad Request cuando estado no es LISTO")
+    void deliver_wrongState() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.deliverOrder(eq(orderId), eq("1234"), anyString()))
+                .thenThrow(new IllegalArgumentException("Solo se puede pasar de LISTO a ENTREGADO"));
+
+        mockMvc.perform(put("/orders/{orderId}/deliver", orderId)
+                        .param("pin", "1234")
+                        .header("Authorization", "Bearer token-empleado"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", containsString("Solo se puede pasar de LISTO a ENTREGADO")));
+    }
+
 }

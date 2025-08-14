@@ -1,7 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exceptionhandler;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.*;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyAssignedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -55,6 +54,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(OrderAlreadyAssignedException.class)
     public ResponseEntity<Map<String, String>> handleOrderAlreadyAssigned(OrderAlreadyAssignedException ex) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPinException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidPin(InvalidPinException ex) {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 

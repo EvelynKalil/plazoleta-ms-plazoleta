@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exceptionhandler.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -23,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = OrderController.class)
@@ -171,6 +174,40 @@ class OrderControllerValidationTest {
 
         verify(orderHandler, never()).createOrder(any(), anyString());
     }
+
+    @Test
+    @DisplayName("400 cuando se intenta marcar ENTREGADO y el PIN es inválido")
+    void updateStatus_entregado_pinInvalido() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        // Simulamos que el handler lanza InvalidPinException
+        Mockito.when(orderHandler.updateOrderStatus(orderId, "ENTREGADO", "Bearer token"))
+                .thenThrow(new InvalidPinException());
+
+        mockMvc.perform(put("/orders/{orderId}/status", orderId)
+                        .param("status", "ENTREGADO")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("PIN inválido"));
+    }
+
+    @Test
+    @DisplayName("400 cuando se intenta marcar ENTREGADO pero el estado actual no es LISTO")
+    void updateStatus_entregado_estadoNoListo() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        // Simulamos que el handler lanza IllegalArgumentException
+        Mockito.when(orderHandler.updateOrderStatus(orderId, "ENTREGADO", "Bearer token"))
+                .thenThrow(new IllegalArgumentException("Solo se puede pasar de LISTO a ENTREGADO"));
+
+        mockMvc.perform(put("/orders/{orderId}/status", orderId)
+                        .param("status", "ENTREGADO")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Solo se puede pasar de LISTO a ENTREGADO"));
+    }
+
+
 
     // ---------- Util ----------
 

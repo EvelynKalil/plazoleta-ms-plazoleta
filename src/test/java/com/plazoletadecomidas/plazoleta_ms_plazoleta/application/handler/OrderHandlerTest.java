@@ -264,4 +264,27 @@ class OrderHandlerTest {
 
         assertTrue(ex.getMessage().contains("Estado inválido"));
     }
+
+    @Test
+    @DisplayName("updateOrderStatus: ENTREGADO con PIN correcto → OK")
+    void handler_entregado_ok() {
+        when(authValidator.validate(tokenEmpleado, Role.EMPLEADO)).thenReturn(employeeId);
+
+        Order updated = new Order();
+        updated.setId(orderId);
+        updated.setStatus(OrderStatus.ENTREGADO);
+
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(orderId);
+        dto.setStatus("ENTREGADO");
+
+        when(orderServicePort.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO)).thenReturn(updated);
+        when(orderMapper.toDetailResponse(updated)).thenReturn(dto);
+
+        OrderDetailResponseDto result = orderHandler.updateOrderStatus(orderId, "ENTREGADO", tokenEmpleado);
+
+        assertEquals("ENTREGADO", result.getStatus());
+        verify(orderServicePort).updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
+    }
+
 }

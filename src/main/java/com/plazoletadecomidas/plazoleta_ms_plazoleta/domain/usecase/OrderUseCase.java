@@ -12,6 +12,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistence
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DishNotFromRestaurantException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.EmptyOrderException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyAssignedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyExistsException;
 import org.springframework.data.domain.Page;
@@ -126,14 +127,17 @@ public class OrderUseCase implements OrderServicePort {
                 Order updated = orderPersistencePort.updateStatusAndPin(orderId, OrderStatus.LISTO, pin);
 
                 String phone = userServicePort.getPhone(updated.getCustomerId());
-                notificationServicePort.notifyOrderReady(phone,
-                        "Tu pedido " + updated.getId() + " está LISTO. PIN: " + pin);
+                notificationServicePort.notifyOrderReady(phone, updated.getId().toString() , pin);
 
                 return updated;
 
             case ENTREGADO:
-                if (!OrderStatus.LISTO.equals(order.getStatus()))
+                if (!OrderStatus.LISTO.equals(order.getStatus())) {
                     throw new IllegalArgumentException("Solo se puede pasar de LISTO a ENTREGADO");
+                }
+                if (order.getSecurityPin() == null || order.getSecurityPin().isBlank()) {
+                    throw new InvalidPinException();
+                }
                 return orderPersistencePort.updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO);
 
             case CANCELADO:
@@ -144,5 +148,9 @@ public class OrderUseCase implements OrderServicePort {
             default:
                 throw new IllegalArgumentException("Transición de estado no permitida");
         }
+
+
     }
+
+
 }

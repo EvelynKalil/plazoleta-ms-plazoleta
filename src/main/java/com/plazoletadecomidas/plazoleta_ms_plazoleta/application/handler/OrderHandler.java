@@ -9,6 +9,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServic
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.springframework.data.domain.Page;
@@ -92,6 +93,23 @@ public class OrderHandler {
 
         return orderMapper.toDetailResponse(updated);
     }
+
+    public OrderDetailResponseDto deliverOrder(UUID orderId, String pin, String token) {
+        UUID employeeId = authValidator.validate(token, Role.EMPLEADO);
+
+        Order order = orderServicePort.findById(orderId);
+        if (!restaurantServicePort.isEmployeeOfRestaurant(order.getRestaurantId(), employeeId)) {
+            throw new UnauthorizedException("No puedes entregar pedidos de otro restaurante");
+        }
+
+        if (!pin.equals(order.getSecurityPin())) {
+            throw new InvalidPinException();
+        }
+
+        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
+        return orderMapper.toDetailResponse(updated);
+    }
+
 
 
 }

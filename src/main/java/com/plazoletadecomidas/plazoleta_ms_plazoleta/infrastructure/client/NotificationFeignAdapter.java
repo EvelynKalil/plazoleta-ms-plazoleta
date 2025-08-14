@@ -1,3 +1,4 @@
+
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.client;
 
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.NotificationServicePort;
@@ -6,14 +7,15 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("notifications-feign")
 @RequiredArgsConstructor
-@Profile("messaging-feign") // activas este perfil cuando tengas el MS listo
 public class NotificationFeignAdapter implements NotificationServicePort {
 
-    private final MessagingClient client;
+    private final NotificationsClient client;
 
     @Override
-    public void notifyOrderReady(String phoneNumber, String message) {
-        client.sendOrderReady(new MessagingClient.OrderReadyMessage(phoneNumber, message));
+    public void notifyOrderReady(String phone, String orderId, String reference) {
+        client.orderReady(new NotificationsClient.OrderReadyRequest(phone, orderId, reference));
     }
 }
+
