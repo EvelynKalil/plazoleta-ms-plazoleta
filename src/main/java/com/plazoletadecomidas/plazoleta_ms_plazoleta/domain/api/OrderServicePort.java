@@ -12,4 +12,5 @@ public interface OrderServicePort {
     Order assignOrderToEmployee(UUID orderId, UUID employeeId);
     Order findById(UUID orderId);
     Order updateOrderStatus(UUID orderId, UUID employeeId, OrderStatus newStatus);
+    Order cancelOrder(UUID orderId, UUID customerId);
 }

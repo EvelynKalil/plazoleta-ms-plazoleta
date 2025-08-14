@@ -15,6 +15,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.Em
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyAssignedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.OrderAlreadyExistsException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -113,10 +114,10 @@ public class OrderUseCase implements OrderServicePort {
         Order order = orderPersistencePort.findById(orderId);
 
         switch (newStatus) {
-            case EN_PREPARACION:
-                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
-                    throw new IllegalArgumentException("Solo se puede pasar de PENDIENTE a EN_PREPARACION");
-                return orderPersistencePort.updateOrderStatus(orderId, newStatus);
+//            case EN_PREPARACION:
+//                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
+//                    throw new IllegalArgumentException("Solo se puede pasar de PENDIENTE a EN_PREPARACION");
+//                return orderPersistencePort.updateOrderStatus(orderId, newStatus);
 
             case LISTO:
                 if (!OrderStatus.EN_PREPARACION.equals(order.getStatus()))
@@ -140,17 +141,24 @@ public class OrderUseCase implements OrderServicePort {
                 }
                 return orderPersistencePort.updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO);
 
-            case CANCELADO:
-                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
-                    throw new IllegalArgumentException("Solo se puede cancelar pedidos PENDIENTE");
-                return orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO);
+//            case CANCELADO:
+//                if (!OrderStatus.PENDIENTE.equals(order.getStatus()))
+//                    throw new IllegalArgumentException("Solo se puede cancelar pedidos PENDIENTE");
+//                return orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO);
 
             default:
                 throw new IllegalArgumentException("Transición de estado no permitida");
         }
-
-
     }
 
-
+    public Order cancelOrder(UUID orderId, UUID customerId) {
+        Order order = orderPersistencePort.findById(orderId);
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new UnauthorizedException("No puedes cancelar pedidos de otro cliente");
+        }
+        if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
+            throw new IllegalArgumentException("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse");
+        }
+        return orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO);
+    }
 }

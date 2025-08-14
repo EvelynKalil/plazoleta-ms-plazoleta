@@ -312,4 +312,36 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.error", containsString("Solo se puede pasar de LISTO a ENTREGADO")));
     }
 
+    @Test
+    @DisplayName("PUT /orders/{orderId}/cancel -> 200 OK cuando se cancela PENDIENTE")
+    void cancel_ok() throws Exception {
+        UUID id = UUID.randomUUID();
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(id);
+        dto.setStatus("CANCELADO");
+
+        Mockito.when(orderHandler.cancelOrder(eq(id), anyString())).thenReturn(dto);
+
+        mockMvc.perform(put("/orders/{orderId}/cancel", id)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.status").value("CANCELADO"));
+    }
+
+    @Test
+    @DisplayName("PUT /orders/{orderId}/cancel -> 400 cuando estado != PENDIENTE")
+    void cancel_wrongState() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        Mockito.when(orderHandler.cancelOrder(eq(id), anyString()))
+                .thenThrow(new IllegalArgumentException("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse"));
+
+        mockMvc.perform(put("/orders/{orderId}/cancel", id)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse"));
+    }
+
 }

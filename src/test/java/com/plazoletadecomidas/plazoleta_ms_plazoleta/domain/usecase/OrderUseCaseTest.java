@@ -271,5 +271,53 @@ class OrderUseCaseTest {
         verify(orderPersistencePort, never()).updateStatusAndClearPin(any(), any());
     }
 
+    @Test
+    @DisplayName("cancelOrder: OK cuando estado=PENDIENTE y el cliente es el dueño")
+    void cancelOrder_ok() {
+        Order pending = new Order(orderId, customerId, restaurantId, List.of(),
+                OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(pending);
+        when(orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO))
+                .thenAnswer(inv -> { pending.setStatus(OrderStatus.CANCELADO); return pending; });
+
+        Order result = orderUseCase.cancelOrder(orderId, customerId);
+
+        assertEquals(OrderStatus.CANCELADO, result.getStatus());
+        verify(orderPersistencePort).findById(orderId);
+        verify(orderPersistencePort).updateOrderStatus(orderId, OrderStatus.CANCELADO);
+    }
+
+    @Test
+    @DisplayName("cancelOrder: lanza IllegalArgumentException cuando estado != PENDIENTE")
+    void cancelOrder_estadoNoPendiente() {
+        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(),
+                OrderStatus.EN_PREPARACION, LocalDateTime.now(), null, null);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(enPrep);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> orderUseCase.cancelOrder(orderId, customerId));
+
+        assertTrue(ex.getMessage().contains("no puede cancelarse"));
+        verify(orderPersistencePort, never()).updateOrderStatus(any(), any());
+    }
+
+    @Test
+    @DisplayName("cancelOrder: lanza UnauthorizedException cuando el pedido no pertenece al cliente")
+    void cancelOrder_noEsDuenio() {
+        UUID otherCustomer = UUID.randomUUID();
+        Order pending = new Order(orderId, otherCustomer, restaurantId, List.of(),
+                OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(pending);
+
+        assertThrows(UnauthorizedException.class,
+                () -> orderUseCase.cancelOrder(orderId, customerId));
+
+        verify(orderPersistencePort, never()).updateOrderStatus(any(), any());
+    }
+
+
 
 }

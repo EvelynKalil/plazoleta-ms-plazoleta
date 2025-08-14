@@ -287,4 +287,42 @@ class OrderHandlerTest {
         verify(orderServicePort).updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
     }
 
+    // HU-16: handler
+
+    @Test
+    @DisplayName("cancelOrder: cliente válido cancela su pedido PENDIENTE")
+    void cancelOrder_handler_ok() {
+        when(authValidator.validate(tokenCliente, Role.CLIENTE)).thenReturn(customerId);
+
+        Order cancelled = new Order();
+        cancelled.setId(orderId);
+        cancelled.setStatus(OrderStatus.CANCELADO);
+
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(orderId);
+        dto.setStatus("CANCELADO");
+
+        when(orderServicePort.cancelOrder(orderId, customerId)).thenReturn(cancelled);
+        when(orderMapper.toDetailResponse(cancelled)).thenReturn(dto);
+
+        OrderDetailResponseDto result = orderHandler.cancelOrder(orderId, tokenCliente);
+
+        assertEquals("CANCELADO", result.getStatus());
+        verify(orderServicePort).cancelOrder(orderId, customerId);
+    }
+
+    @Test
+    @DisplayName("cancelOrder: lanza Unauthorized si el pedido no es del cliente")
+    void cancelOrder_handler_unauthorized() {
+        when(authValidator.validate(tokenCliente, Role.CLIENTE)).thenReturn(customerId);
+
+        // Simulamos que el use case lanzará UnauthorizedException por no ser dueño
+        doThrow(new UnauthorizedException("No puedes cancelar pedidos de otro cliente"))
+                .when(orderServicePort).cancelOrder(orderId, customerId);
+
+        assertThrows(UnauthorizedException.class,
+                () -> orderHandler.cancelOrder(orderId, tokenCliente));
+    }
+
+
 }

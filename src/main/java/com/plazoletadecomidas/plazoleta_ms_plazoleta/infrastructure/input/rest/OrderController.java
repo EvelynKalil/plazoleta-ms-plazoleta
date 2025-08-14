@@ -67,4 +67,11 @@ public class OrderController {
         return ResponseEntity.ok(handler.deliverOrder(orderId, pin, token));
     }
 
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderDetailResponseDto> cancel(
+            @PathVariable UUID orderId,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        return ResponseEntity.ok(handler.cancelOrder(orderId, token));
+    }
 }

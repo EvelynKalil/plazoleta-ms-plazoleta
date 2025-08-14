@@ -1,10 +1,12 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exceptionhandler.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -207,7 +210,52 @@ class OrderControllerValidationTest {
                 .andExpect(jsonPath("$.error").value("Solo se puede pasar de LISTO a ENTREGADO"));
     }
 
+    @Test
+    @DisplayName("200 OK cuando el cliente cancela su pedido en estado PENDIENTE")
+    void cancelOrder_ok() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderDetailResponseDto dto = new OrderDetailResponseDto();
+        dto.setId(orderId);
+        dto.setStatus("CANCELADO");
 
+        Mockito.when(orderHandler.cancelOrder(eq(orderId), anyString()))
+                .thenReturn(dto);
+
+        mockMvc.perform(put("/orders/{orderId}/cancel", orderId)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(orderId.toString()))
+                .andExpect(jsonPath("$.status").value("CANCELADO"));
+    }
+
+    @Test
+    @DisplayName("403 Forbidden cuando el cliente intenta cancelar un pedido que no es suyo")
+    void cancelOrder_unauthorized() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.cancelOrder(eq(orderId), anyString()))
+                .thenThrow(new UnauthorizedException("No puedes cancelar pedidos de otro cliente"));
+
+        mockMvc.perform(put("/orders/{orderId}/cancel", orderId)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("No puedes cancelar pedidos de otro cliente"));
+    }
+
+    @Test
+    @DisplayName("400 Bad Request cuando el pedido no está en estado PENDIENTE")
+    void cancelOrder_estadoNoPendiente() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        Mockito.when(orderHandler.cancelOrder(eq(orderId), anyString()))
+                .thenThrow(new IllegalArgumentException("Solo se puede cancelar pedidos PENDIENTE"));
+
+        mockMvc.perform(put("/orders/{orderId}/cancel", orderId)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Solo se puede cancelar pedidos PENDIENTE"));
+    }
 
     // ---------- Util ----------
 

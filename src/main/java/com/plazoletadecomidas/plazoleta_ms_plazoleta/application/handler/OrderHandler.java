@@ -110,6 +110,17 @@ public class OrderHandler {
         return orderMapper.toDetailResponse(updated);
     }
 
+    public OrderDetailResponseDto cancelOrder(UUID orderId, String token) {
+        UUID customerId = authValidator.validate(token, Role.CLIENTE);
+
+        Order order = orderServicePort.findById(orderId);
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new UnauthorizedException("No puedes cancelar pedidos de otro cliente");
+        }
+
+        Order updated = orderServicePort.cancelOrder(orderId, customerId);
+        return orderMapper.toDetailResponse(updated);
+    }
 
 
 }
