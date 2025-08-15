@@ -7,10 +7,10 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface OrderServicePort {
-    Order createOrder(Order order);
+    Order createOrder(Order order, String token);
     Page<Order> getOrdersByStatus(UUID restaurantId, String status, Pageable pageable);
-    Order assignOrderToEmployee(UUID orderId, UUID employeeId);
+    Order assignOrderToEmployee(UUID orderId, UUID employeeId, String token);
     Order findById(UUID orderId);
-    Order updateOrderStatus(UUID orderId, UUID employeeId, OrderStatus newStatus);
-    Order cancelOrder(UUID orderId, UUID customerId);
+    Order updateOrderStatus(UUID orderId, UUID employeeId, OrderStatus newStatus, String token);
+    Order cancelOrder(UUID orderId, UUID customerId, String token);
 }

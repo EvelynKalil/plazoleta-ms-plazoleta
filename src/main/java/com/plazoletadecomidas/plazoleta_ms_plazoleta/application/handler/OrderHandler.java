@@ -40,42 +40,32 @@ public class OrderHandler {
     public OrderResponseDto createOrder(OrderRequestDto dto, String token) {
         UUID customerId = authValidator.validate(token, Role.CLIENTE);
         Order order = orderMapper.toModel(dto, customerId.toString());
-        Order savedOrder = orderServicePort.createOrder(order);
+        Order savedOrder = orderServicePort.createOrder(order, token); // 🔹 Pasar token
         return orderMapper.toResponse(savedOrder);
     }
 
     public Page<OrderDetailResponseDto> listOrdersByStatus(UUID restaurantId, String status, int page, int size, String token) {
-        // 1) Validar rol EMPLEADO y obtener employeeId
         UUID employeeId = authValidator.validate(token, Role.EMPLEADO);
 
-        // 2) Validar que el empleado pertenezca al restaurante
-        // Asumimos que ya tienes este método en RestaurantServicePort (si no, agrégalo):
-        // boolean isEmployeeOfRestaurant(UUID restaurantId, UUID employeeId)
         if (!restaurantServicePort.isEmployeeOfRestaurant(restaurantId, employeeId)) {
             throw new UnauthorizedException("No puedes listar pedidos de un restaurante que no es tuyo.");
         }
 
-        // 3) Paginación
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
 
-        // 4) Llamar caso de uso
-        org.springframework.data.domain.Page<com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order> result =
-                orderServicePort.getOrdersByStatus(restaurantId, status, pageable);
-
-        // 5) Mapear a DTO detalle
+        Page<Order> result = orderServicePort.getOrdersByStatus(restaurantId, status, pageable);
         return result.map(orderMapper::toDetailResponse);
     }
 
     public OrderDetailResponseDto assignOrder(UUID orderId, String token) {
         UUID employeeId = authValidator.validate(token, Role.EMPLEADO);
 
-        // Validar que el pedido pertenece a un restaurante del empleado
         Order order = orderServicePort.findById(orderId);
         if (!restaurantServicePort.isEmployeeOfRestaurant(order.getRestaurantId(), employeeId)) {
             throw new UnauthorizedException("No puedes asignarte pedidos de otro restaurante");
         }
 
-        Order updated = orderServicePort.assignOrderToEmployee(orderId, employeeId);
+        Order updated = orderServicePort.assignOrderToEmployee(orderId, employeeId, token); // 🔹 Pasar token
         return orderMapper.toDetailResponse(updated);
     }
 
@@ -89,8 +79,7 @@ public class OrderHandler {
             throw new IllegalArgumentException("Estado inválido. Usa: PENDIENTE, EN_PREPARACION, LISTO, ENTREGADO o CANCELADO");
         }
 
-        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, newStatus);
-
+        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, newStatus, token); // 🔹 Pasar token
         return orderMapper.toDetailResponse(updated);
     }
 
@@ -106,7 +95,7 @@ public class OrderHandler {
             throw new InvalidPinException();
         }
 
-        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
+        Order updated = orderServicePort.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO, token); // 🔹 Pasar token
         return orderMapper.toDetailResponse(updated);
     }
 
@@ -118,9 +107,8 @@ public class OrderHandler {
             throw new UnauthorizedException("No puedes cancelar pedidos de otro cliente");
         }
 
-        Order updated = orderServicePort.cancelOrder(orderId, customerId);
+        Order updated = orderServicePort.cancelOrder(orderId, customerId, token); // 🔹 Pasar token
         return orderMapper.toDetailResponse(updated);
     }
-
-
 }
+
