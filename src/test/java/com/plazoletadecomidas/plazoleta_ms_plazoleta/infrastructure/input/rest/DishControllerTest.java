@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.DishRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.DishResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.DishHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(NoSecurityConfig.class)
 @WebMvcTest(DishController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class DishControllerTest {

@@ -1,21 +1,21 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import javax.validation.Valid;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-
-@Getter
-@Setter
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 public class OrderItemDto {
-    @NotEmpty(message = "El id del plato es obligatorio")
-    @Valid
+
+    @NotBlank(message = "El id del plato es obligatorio")
     private String dishId;
 
-    @Min(value = 1, message = "La cantidad debe ser al menos 1")
-    @Valid
-    private int quantity;
+    @NotNull(message = "La cantidad es obligatoria")
+    @Min(value = 1, message = "La cantidad mínima es 1")
+    private Integer quantity;
+
+    public String getDishId() { return dishId; }
+    public void setDishId(String dishId) { this.dishId = dishId; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
 }

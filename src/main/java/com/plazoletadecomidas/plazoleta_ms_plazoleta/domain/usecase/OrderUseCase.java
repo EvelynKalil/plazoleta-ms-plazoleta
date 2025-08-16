@@ -50,7 +50,7 @@ public class OrderUseCase implements OrderServicePort {
     @Override
     public Order createOrder(Order order, String token) {
         if (orderPersistencePort.existsActiveOrderByCustomer(order.getCustomerId())) {
-            throw new OrderAlreadyExistsException("Ya tienes un pedido en proceso");
+            throw new OrderAlreadyExistsException();
         }
 
         Set<UUID> platosUnicos = new HashSet<>();
@@ -101,7 +101,7 @@ public class OrderUseCase implements OrderServicePort {
     public Order assignOrderToEmployee(UUID orderId, UUID employeeId, String token) {
         Order order = orderPersistencePort.findById(orderId);
         if (!OrderStatus.PENDIENTE.equals(order.getStatus())) {
-            throw new OrderAlreadyAssignedException("Solo se pueden asignar pedidos en estado PENDIENTE");
+            throw new OrderAlreadyAssignedException();
         }
 
         // Cambiar estado y asignar empleado

@@ -3,11 +3,13 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.DishRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.DishHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
@@ -20,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(DishController.class)
+@Import(NoSecurityConfig.class)
 class DishControllerValidationTest {
 
     @Autowired
@@ -107,6 +110,7 @@ class DishControllerValidationTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
     }
+
     @Test
     @DisplayName("Debería retornar 401 si el owner no tiene permisos para actualizar el plato")
     void shouldReturn401WhenOwnerIsUnauthorized() throws Exception {

@@ -3,10 +3,12 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.RestaurantHandler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantRequestDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,6 +17,7 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(NoSecurityConfig.class)
 @WebMvcTest(RestaurantController.class)
 class RestaurantControllerValidationTest {
 

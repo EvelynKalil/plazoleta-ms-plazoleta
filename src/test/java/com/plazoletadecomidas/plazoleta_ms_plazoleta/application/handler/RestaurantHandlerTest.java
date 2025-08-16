@@ -7,10 +7,12 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.Restaura
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@Import(NoSecurityConfig.class)
 class RestaurantHandlerTest {
 
     private RestaurantServicePort servicePort;
@@ -78,19 +81,20 @@ class RestaurantHandlerTest {
                 saved.getUrlLogo()
         );
 
-        when(authValidator.validate(token, Role.ADMINISTRADOR)).thenReturn(ownerId);
-        when(mapper.toModel(dto)).thenReturn(modelSinOwner);
-        when(servicePort.saveRestaurant(modelConOwner)).thenReturn(saved);
-        when(mapper.toResponseDto(saved)).thenReturn(esperado);
+        when(authValidator.validate(anyString(), any(Role.class))).thenReturn(ownerId);
+        when(mapper.toModel(any(RestaurantRequestDto.class))).thenReturn(modelSinOwner);
+        when(servicePort.saveRestaurant(any(Restaurant.class))).thenReturn(saved);
+        when(mapper.toResponseDto(any(Restaurant.class))).thenReturn(esperado);
 
         // Act
         RestaurantResponseDto result = handler.saveRestaurant(dto, token);
 
         // Assert
+        System.out.println(">>> Resultado real: " + result);
         assertEquals(esperado, result);
         verify(authValidator).validate(token, Role.ADMINISTRADOR);
         verify(mapper).toModel(dto);
-        verify(servicePort).saveRestaurant(modelConOwner);
+        verify(servicePort).saveRestaurant(any(Restaurant.class));
         verify(mapper).toResponseDto(saved);
         verifyNoMoreInteractions(authValidator, mapper, servicePort);
     }

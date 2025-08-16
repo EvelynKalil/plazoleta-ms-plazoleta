@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +21,6 @@ public class DishController {
 
     public DishController(DishHandler dishHandler) {
         this.dishHandler = dishHandler;
-
     }
 
     @PostMapping
@@ -38,6 +38,10 @@ public class DishController {
             @RequestBody DishRequestDto dto,
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("El header Authorization es obligatorio");
+        }
+
         dishHandler.updateDish(id, dto, token);
 
         Map<String, String> response = new HashMap<>();
@@ -53,10 +57,16 @@ public class DishController {
             @RequestParam boolean enabled,
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("El header Authorization es obligatorio");
+        }
+
         dishHandler.toggleDishStatus(id, enabled, token);
+
         Map<String, String> response = new HashMap<>();
         response.put("message", "Plato " + (enabled ? "habilitado" : "deshabilitado") + " correctamente");
         response.put("dishId", id.toString());
+
         return ResponseEntity.ok(response);
     }
 
@@ -68,6 +78,12 @@ public class DishController {
             @RequestParam(defaultValue = "10") int size,
             @RequestHeader(value = "Authorization", required = false) String token
     ) {
-        return ResponseEntity.ok(dishHandler.listDishesByRestaurant(restaurantId, category, page, size, token));
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("El header Authorization es obligatorio");
+        }
+
+        return ResponseEntity.ok(
+                dishHandler.listDishesByRestaurant(restaurantId, category, page, size, token)
+        );
     }
 }

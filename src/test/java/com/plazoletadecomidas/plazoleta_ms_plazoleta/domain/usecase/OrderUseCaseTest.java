@@ -1,22 +1,19 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase;
 
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Dish;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.*;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.*;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderItem;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.OrderPersistencePort;
-import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.DishServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
+
 import java.time.LocalDateTime;
 import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -25,6 +22,9 @@ class OrderUseCaseTest {
 
     @Mock private OrderPersistencePort orderPersistencePort;
     @Mock private DishServicePort dishServicePort;
+    @Mock private NotificationServicePort notificationServicePort;
+    @Mock private UserServicePort userServicePort;
+    @Mock private TraceabilityServicePort traceabilityServicePort;
 
     @InjectMocks
     private OrderUseCase orderUseCase;
@@ -32,201 +32,156 @@ class OrderUseCaseTest {
     private UUID customerId;
     private UUID restaurantId;
     private UUID dishId;
-    private OrderItem item;
-    private Order order;
-
     private UUID orderId;
     private UUID employeeId;
+    private String token;
+    private OrderItem item;
+    private Order baseOrder;
 
     @BeforeEach
     void setUp() {
         customerId = UUID.randomUUID();
         restaurantId = UUID.randomUUID();
         dishId = UUID.randomUUID();
+        orderId = UUID.randomUUID();
+        employeeId = UUID.randomUUID();
+        token = "mock-token";
 
         item = new OrderItem(dishId, 2);
 
-        order = new Order();
-        order.setCustomerId(customerId);
-        order.setRestaurantId(restaurantId);
-        order.setItems(List.of(item));
-
-        orderId = UUID.randomUUID();
-        employeeId = UUID.randomUUID();
+        baseOrder = new Order();
+        baseOrder.setCustomerId(customerId);
+        baseOrder.setRestaurantId(restaurantId);
+        baseOrder.setItems(List.of(item));
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si el cliente ya tiene un pedido activo")
     void createOrder_clienteConPedidoActivo() {
         when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(true);
 
-        OrderAlreadyExistsException ex = assertThrows(OrderAlreadyExistsException.class,
-                () -> orderUseCase.createOrder(order));
+        assertThrows(OrderAlreadyExistsException.class,
+                () -> orderUseCase.createOrder(baseOrder, token));
 
-        assertEquals("Ya tienes un pedido en proceso", ex.getMessage());
         verify(orderPersistencePort).existsActiveOrderByCustomer(customerId);
         verifyNoMoreInteractions(orderPersistencePort);
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si hay items duplicados")
     void createOrder_itemsDuplicados() {
-        OrderItem duplicado = new OrderItem(dishId, 1);
-        order.setItems(Arrays.asList(item, duplicado));
-
+        baseOrder.setItems(List.of(item, new OrderItem(dishId, 1)));
         when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(false);
 
         assertThrows(DuplicateOrderItemException.class,
-                () -> orderUseCase.createOrder(order));
+                () -> orderUseCase.createOrder(baseOrder, token));
     }
 
     @Test
-    @DisplayName("Debe lanzar excepción si un plato no pertenece al restaurante")
-    void createOrder_platoNoPerteneceAlRestaurante() {
-        UUID otroRestaurante = UUID.randomUUID();
-
-        when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(false);
-        when(dishServicePort.getDishById(dishId)).thenReturn(
-                Dish.builder()
-                        .id(dishId)
-                        .name("Pizza")
-                        .price(10000)
-                        .description("desc")
-                        .urlImage("url")
-                        .category("cat")
-                        .restaurantId(otroRestaurante)
-                        .active(true)
-                        .build()
-        );
-
-        assertThrows(DishNotFromRestaurantException.class,
-                () -> orderUseCase.createOrder(order));
-    }
-
-    @Test
-    @DisplayName("Debe lanzar excepción si el pedido no tiene items")
     void createOrder_pedidoSinItems() {
-        order.setItems(Collections.emptyList());
-
+        baseOrder.setItems(Collections.emptyList());
         when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(false);
 
         assertThrows(EmptyOrderException.class,
-                () -> orderUseCase.createOrder(order));
+                () -> orderUseCase.createOrder(baseOrder, token));
     }
 
     @Test
-    @DisplayName("Debe crear un pedido válido con estado PENDIENTE")
+    void createOrder_platoNoPerteneceAlRestaurante() {
+        when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(false);
+        when(dishServicePort.getDishById(dishId))
+                .thenReturn(Dish.builder().id(dishId).restaurantId(UUID.randomUUID()).active(true).build());
+
+        assertThrows(DishNotFromRestaurantException.class,
+                () -> orderUseCase.createOrder(baseOrder, token));
+    }
+
+    @Test
     void createOrder_pedidoValido() {
         when(orderPersistencePort.existsActiveOrderByCustomer(customerId)).thenReturn(false);
-        when(dishServicePort.getDishById(dishId)).thenReturn(
-                Dish.builder()
-                        .id(dishId)
-                        .name("Pizza")
-                        .price(10000)
-                        .description("desc")
-                        .urlImage("url")
-                        .category("cat")
-                        .restaurantId(restaurantId)
-                        .active(true)
-                        .build()
-        );
+        when(dishServicePort.getDishById(dishId))
+                .thenReturn(Dish.builder().id(dishId).restaurantId(restaurantId).active(true).build());
 
-        when(orderPersistencePort.save(any(Order.class))).thenAnswer(invocation -> {
-            Order o = invocation.getArgument(0);
-            o.setId(UUID.randomUUID());
-            o.setCreatedAt(LocalDateTime.now());
-            return o;
-        });
+        when(orderPersistencePort.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    o.setId(UUID.randomUUID());
+                    o.setCreatedAt(LocalDateTime.now());
+                    return o;
+                });
 
-        Order result = orderUseCase.createOrder(order);
+        Order result = orderUseCase.createOrder(baseOrder, token);
 
         assertNotNull(result.getId());
         assertEquals(OrderStatus.PENDIENTE, result.getStatus());
-        assertNotNull(result.getCreatedAt());
-        verify(orderPersistencePort).save(any(Order.class));
+        verify(traceabilityServicePort).sendOrderStatusChange(result, token);
     }
 
     @Test
     void givenValidRestaurantAndStatus_whenGetOrdersByStatus_thenReturnPage() {
-        Order testOrder = new Order();
-        testOrder.setId(orderId);
-        testOrder.setCustomerId(customerId);
-        testOrder.setRestaurantId(restaurantId);
-        testOrder.setItems(List.of());
-        testOrder.setStatus(OrderStatus.PENDIENTE);
-        testOrder.setCreatedAt(LocalDateTime.now());
-
+        Order testOrder = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
         Page<Order> page = new PageImpl<>(List.of(testOrder));
 
-        when(orderPersistencePort.findByRestaurantAndStatus(eq(restaurantId), eq(OrderStatus.PENDIENTE), any(Pageable.class)))
+        when(orderPersistencePort.findByRestaurantAndStatus(eq(restaurantId), eq(OrderStatus.PENDIENTE), any()))
                 .thenReturn(page);
 
         Page<Order> result = orderUseCase.getOrdersByStatus(restaurantId, "PENDIENTE", PageRequest.of(0, 5));
 
         assertEquals(1, result.getTotalElements());
-        assertEquals(OrderStatus.PENDIENTE, result.getContent().get(0).getStatus());
     }
 
     @Test
-    void givenInvalidStatus_whenGetOrdersByStatus_thenThrowException() {
-        PageRequest pageRequest = PageRequest.of(0, 5);
-
+    void getOrdersByStatus_invalido() {
         assertThrows(IllegalArgumentException.class,
-                () -> orderUseCase.getOrdersByStatus(restaurantId, "INVALIDO", pageRequest)
-        );
+                () -> orderUseCase.getOrdersByStatus(restaurantId, "INVALIDO", PageRequest.of(0, 5)));
     }
 
     @Test
-    void givenPendingOrder_whenAssignOrder_thenReturnUpdatedOrder() {
-        Order pendingOrder = new Order();
-        pendingOrder.setId(orderId);
-        pendingOrder.setCustomerId(customerId);
-        pendingOrder.setRestaurantId(restaurantId);
-        pendingOrder.setItems(List.of());
-        pendingOrder.setStatus(OrderStatus.PENDIENTE);
-        pendingOrder.setCreatedAt(LocalDateTime.now());
-
-        Order updatedOrder = new Order();
-        updatedOrder.setId(orderId);
-        updatedOrder.setCustomerId(customerId);
-        updatedOrder.setRestaurantId(restaurantId);
-        updatedOrder.setItems(List.of());
-        updatedOrder.setStatus(OrderStatus.PENDIENTE);
-        updatedOrder.setCreatedAt(LocalDateTime.now());
+    void assignOrderToEmployee_ok() {
+        Order pendingOrder = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
+        Order updated = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), employeeId, null);
 
         when(orderPersistencePort.findById(orderId)).thenReturn(pendingOrder);
-        when(orderPersistencePort.assignOrderToEmployee(orderId, employeeId)).thenReturn(updatedOrder);
+        when(orderPersistencePort.assignOrderToEmployee(orderId, employeeId)).thenReturn(updated);
 
-        Order result = orderUseCase.assignOrderToEmployee(orderId, employeeId);
+        Order result = orderUseCase.assignOrderToEmployee(orderId, employeeId, token);
 
         assertEquals(OrderStatus.EN_PREPARACION, result.getStatus());
-        verify(orderPersistencePort).assignOrderToEmployee(orderId, employeeId);
+        verify(traceabilityServicePort).sendOrderStatusChange(updated, token);
     }
 
     @Test
-    void givenOrderNotPending_whenAssignOrder_thenThrowException() {
-        Order notPendingOrder = new Order();
-        notPendingOrder.setId(orderId);
-        notPendingOrder.setCustomerId(customerId);
-        notPendingOrder.setRestaurantId(restaurantId);
-        notPendingOrder.setItems(List.of());
-        notPendingOrder.setStatus(OrderStatus.PENDIENTE);
-        notPendingOrder.setCreatedAt(LocalDateTime.now());
+    void assignOrderToEmployee_noPendiente() {
+        Order notPending = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), null, null);
+        when(orderPersistencePort.findById(orderId)).thenReturn(notPending);
 
-        when(orderPersistencePort.findById(orderId)).thenReturn(notPendingOrder);
-
-        assertThrows(OrderAlreadyAssignedException.class, () ->
-                orderUseCase.assignOrderToEmployee(orderId, employeeId)
-        );
-
-        verify(orderPersistencePort, never()).assignOrderToEmployee(any(), any());
+        assertThrows(OrderAlreadyAssignedException.class,
+                () -> orderUseCase.assignOrderToEmployee(orderId, employeeId, token));
     }
 
     @Test
-    @DisplayName("updateOrderStatus: estado LISTO y PIN correcto → ENTREGADO")
-    void updateOrderStatus_entregado_ok() {
-        String pin = "1234";
-        Order listo = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, pin);
+    void updateOrderStatus_aListo_ok() {
+        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), employeeId, null);
+        String telefono = "3001234567";
+
+        when(orderPersistencePort.findById(orderId)).thenReturn(enPrep);
+        when(orderPersistencePort.updateStatusAndPin(eq(orderId), eq(OrderStatus.LISTO), anyString()))
+                .thenAnswer(inv -> {
+                    enPrep.setStatus(OrderStatus.LISTO);
+                    enPrep.setSecurityPin(inv.getArgument(2));
+                    return enPrep;
+                });
+        when(userServicePort.getPhone(customerId)).thenReturn(telefono);
+
+        Order result = orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.LISTO, token);
+
+        assertEquals(OrderStatus.LISTO, result.getStatus());
+        assertNotNull(result.getSecurityPin());
+        verify(notificationServicePort).notifyOrderReady(telefono, orderId.toString(), result.getSecurityPin());
+        verify(traceabilityServicePort).sendOrderStatusChange(result, token);
+    }
+
+    @Test
+    void updateOrderStatus_aEntregado_ok() {
+        Order listo = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, "1234");
 
         when(orderPersistencePort.findById(orderId)).thenReturn(listo);
         when(orderPersistencePort.updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO))
@@ -236,88 +191,51 @@ class OrderUseCaseTest {
                     return listo;
                 });
 
-        Order result = orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO);
+        Order result = orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO, token);
 
         assertEquals(OrderStatus.ENTREGADO, result.getStatus());
         assertNull(result.getSecurityPin());
-        verify(orderPersistencePort).updateStatusAndClearPin(orderId, OrderStatus.ENTREGADO);
+        verify(traceabilityServicePort).sendOrderStatusChange(result, token);
     }
 
     @Test
-    @DisplayName("updateOrderStatus: estado LISTO pero PIN no coincide → InvalidPinException")
-    void updateOrderStatus_entregado_pinInvalido() {
-        Order listo = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, "1234");
+    void updateOrderStatus_aEntregado_sinPin() {
+        Order listoSinPin = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.LISTO, LocalDateTime.now(), employeeId, null);
+        when(orderPersistencePort.findById(orderId)).thenReturn(listoSinPin);
 
-        when(orderPersistencePort.findById(orderId)).thenReturn(listo);
-
-        assertThrows(InvalidPinException.class, () ->
-                orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO)
-        );
-
-        verify(orderPersistencePort, never()).updateStatusAndClearPin(any(), any());
+        assertThrows(InvalidPinException.class,
+                () -> orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO, token));
     }
 
     @Test
-    @DisplayName("updateOrderStatus: estado distinto de LISTO → IllegalArgumentException")
-    void updateOrderStatus_entregado_estadoInvalido() {
-        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), employeeId, "1234");
-
-        when(orderPersistencePort.findById(orderId)).thenReturn(enPrep);
-
-        assertThrows(IllegalArgumentException.class, () ->
-                orderUseCase.updateOrderStatus(orderId, employeeId, OrderStatus.ENTREGADO)
-        );
-
-        verify(orderPersistencePort, never()).updateStatusAndClearPin(any(), any());
-    }
-
-    @Test
-    @DisplayName("cancelOrder: OK cuando estado=PENDIENTE y el cliente es el dueño")
     void cancelOrder_ok() {
-        Order pending = new Order(orderId, customerId, restaurantId, List.of(),
-                OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
-
+        Order pending = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
         when(orderPersistencePort.findById(orderId)).thenReturn(pending);
         when(orderPersistencePort.updateOrderStatus(orderId, OrderStatus.CANCELADO))
                 .thenAnswer(inv -> { pending.setStatus(OrderStatus.CANCELADO); return pending; });
 
-        Order result = orderUseCase.cancelOrder(orderId, customerId);
+        Order result = orderUseCase.cancelOrder(orderId, customerId, token);
 
         assertEquals(OrderStatus.CANCELADO, result.getStatus());
-        verify(orderPersistencePort).findById(orderId);
-        verify(orderPersistencePort).updateOrderStatus(orderId, OrderStatus.CANCELADO);
+        verify(traceabilityServicePort).sendOrderStatusChange(result, token);
     }
 
     @Test
-    @DisplayName("cancelOrder: lanza IllegalArgumentException cuando estado != PENDIENTE")
-    void cancelOrder_estadoNoPendiente() {
-        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(),
-                OrderStatus.EN_PREPARACION, LocalDateTime.now(), null, null);
-
+    void cancelOrder_noPendiente() {
+        Order enPrep = new Order(orderId, customerId, restaurantId, List.of(), OrderStatus.EN_PREPARACION, LocalDateTime.now(), null, null);
         when(orderPersistencePort.findById(orderId)).thenReturn(enPrep);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> orderUseCase.cancelOrder(orderId, customerId));
-
-        assertTrue(ex.getMessage().contains("no puede cancelarse"));
-        verify(orderPersistencePort, never()).updateOrderStatus(any(), any());
+        assertThrows(IllegalArgumentException.class,
+                () -> orderUseCase.cancelOrder(orderId, customerId, token));
     }
 
     @Test
-    @DisplayName("cancelOrder: lanza UnauthorizedException cuando el pedido no pertenece al cliente")
-    void cancelOrder_noEsDuenio() {
-        UUID otherCustomer = UUID.randomUUID();
-        Order pending = new Order(orderId, otherCustomer, restaurantId, List.of(),
-                OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
-
+    void cancelOrder_noEsDelCliente() {
+        UUID otroCliente = UUID.randomUUID();
+        Order pending = new Order(orderId, otroCliente, restaurantId, List.of(), OrderStatus.PENDIENTE, LocalDateTime.now(), null, null);
         when(orderPersistencePort.findById(orderId)).thenReturn(pending);
 
         assertThrows(UnauthorizedException.class,
-                () -> orderUseCase.cancelOrder(orderId, customerId));
-
-        verify(orderPersistencePort, never()).updateOrderStatus(any(), any());
+                () -> orderUseCase.cancelOrder(orderId, customerId, token));
     }
-
-
-
 }

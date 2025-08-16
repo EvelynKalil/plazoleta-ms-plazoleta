@@ -5,6 +5,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantB
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.RestaurantResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.RestaurantHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.security.AuthValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
@@ -27,7 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-
+@Import(NoSecurityConfig.class)
 @WebMvcTest(RestaurantController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class RestaurantControllerTest {
@@ -57,7 +59,9 @@ class RestaurantControllerTest {
                 UUID.randomUUID(), dto.getName(), dto.getNit(), dto.getAddress(), dto.getPhone(), dto.getUrlLogo()
         );
 
-        when(handler.saveRestaurant(dto, token)).thenReturn(responseDto);
+        when(handler.saveRestaurant(any(RestaurantRequestDto.class), eq(token)))
+                .thenReturn(responseDto);
+
 
         mockMvc.perform(post("/restaurants")
                         .contentType(MediaType.APPLICATION_JSON)

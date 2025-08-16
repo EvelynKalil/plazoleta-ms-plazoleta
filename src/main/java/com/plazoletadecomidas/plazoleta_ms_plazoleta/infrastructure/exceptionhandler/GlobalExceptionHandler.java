@@ -4,8 +4,10 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
@@ -16,20 +18,37 @@ public class GlobalExceptionHandler {
 
     private static final String ERROR_KEY = "error";
 
-    // --- EXCEPCIONES DE NEGOCIO ---
+    private ResponseEntity<Map<String, String>> buildError(HttpStatus status, String message) {
+        Map<String, String> error = new HashMap<>();
+        error.put(ERROR_KEY, message);
+        return ResponseEntity.status(status).body(error);
+    }
+
+    // --- Excepciones de negocio ---
     @ExceptionHandler(RestaurantAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleAlreadyExists(RestaurantAlreadyExistsException ex) {
+    public ResponseEntity<Map<String, String>> handleRestaurantAlreadyExists(RestaurantAlreadyExistsException ex) {
         return buildError(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    @ExceptionHandler({RestaurantNotFoundException.class, NotFoundException.class})
-    public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException ex) {
+    @ExceptionHandler(RestaurantNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleRestaurantNotFound(RestaurantNotFoundException ex) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNotFound(NotFoundException ex) {
         return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, String>> handleUnauthorized(UnauthorizedException ex) {
-        return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        HttpStatus status = ex.getMessage() != null &&
+                (ex.getMessage().toLowerCase().contains("token") ||
+                        ex.getMessage().toLowerCase().contains("permiso"))
+                ? HttpStatus.UNAUTHORIZED
+                : HttpStatus.FORBIDDEN;
+
+        return buildError(status, ex.getMessage());
     }
 
     @ExceptionHandler(OrderAlreadyExistsException.class)
@@ -39,7 +58,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateOrderItemException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateOrderItem(DuplicateOrderItemException ex) {
-        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = "El pedido contiene items duplicados.";
+        }
+        return buildError(HttpStatus.BAD_REQUEST, msg);
     }
 
     @ExceptionHandler(DishNotFromRestaurantException.class)
@@ -62,13 +85,21 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // --- ERRORES DE VALIDACIÓN Y FORMATO ---
+    // --- Errores de validación ---
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException ex) {
+        return buildError(HttpStatus.BAD_REQUEST,
+                "El header '" + ex.getHeaderName() + "' es obligatorio");
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors()
-                .forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(errors);
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        String firstError = ex.getBindingResult().getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse("Datos inválidos");
+        return buildError(HttpStatus.BAD_REQUEST, firstError);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -86,17 +117,10 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // --- EXCEPCIÓN GENÉRICA ---
+    // --- Genérica ---
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
         ex.printStackTrace();
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor");
-    }
-
-    // --- MÉTODO AUXILIAR ---
-    private ResponseEntity<Map<String, String>> buildError(HttpStatus status, String message) {
-        Map<String, String> error = new HashMap<>();
-        error.put(ERROR_KEY, message);
-        return ResponseEntity.status(status).body(error);
     }
 }

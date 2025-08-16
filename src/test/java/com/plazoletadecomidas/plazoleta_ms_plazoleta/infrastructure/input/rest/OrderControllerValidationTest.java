@@ -5,6 +5,7 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetail
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exceptionhandler.GlobalExceptionHandler;
@@ -31,8 +32,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+
 @WebMvcTest(controllers = OrderController.class)
-@Import(GlobalExceptionHandler.class) // asegura que el advice participe
+@Import({GlobalExceptionHandler.class, NoSecurityConfig.class}) // asegura que el advice participe
 class OrderControllerValidationTest {
 
     @Autowired private MockMvc mockMvc;

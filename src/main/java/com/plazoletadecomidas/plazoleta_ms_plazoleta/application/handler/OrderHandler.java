@@ -3,9 +3,11 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderTraceResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.mapper.OrderMapper;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.OrderServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.RestaurantServicePort;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.TraceabilityServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Order;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.OrderStatus;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Role;
@@ -24,17 +26,20 @@ public class OrderHandler {
     private final OrderMapper orderMapper;
     private final AuthValidator authValidator;
     private final RestaurantServicePort restaurantServicePort;
+    private final TraceabilityServicePort traceabilityServicePort;
 
     public OrderHandler(
             OrderServicePort orderServicePort,
             OrderMapper orderMapper,
             AuthValidator authValidator,
-            RestaurantServicePort restaurantServicePort
+            RestaurantServicePort restaurantServicePort,
+            TraceabilityServicePort traceabilityServicePort
     ) {
         this.orderServicePort = orderServicePort;
         this.orderMapper = orderMapper;
         this.authValidator = authValidator;
         this.restaurantServicePort = restaurantServicePort;
+        this.traceabilityServicePort =traceabilityServicePort;
     }
 
     public OrderResponseDto createOrder(OrderRequestDto dto, String token) {
@@ -109,6 +114,15 @@ public class OrderHandler {
 
         Order updated = orderServicePort.cancelOrder(orderId, customerId, token); // 🔹 Pasar token
         return orderMapper.toDetailResponse(updated);
+    }
+
+    public OrderTraceResponseDto getOrderTrace(UUID orderId, String token) {
+        UUID customerId = authValidator.validate(token, Role.CLIENTE);
+        Order order = orderServicePort.findById(orderId);
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new UnauthorizedException("No puedes ver la trazabilidad de un pedido que no es tuyo");
+        }
+        return traceabilityServicePort.getOrderTrace(orderId, token);
     }
 }
 

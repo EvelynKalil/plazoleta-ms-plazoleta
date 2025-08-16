@@ -3,6 +3,7 @@ package com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.input.rest;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetailResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderTraceResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,4 +75,13 @@ public class OrderController {
     ) {
         return ResponseEntity.ok(handler.cancelOrder(orderId, token));
     }
+
+    @GetMapping("/{orderId}/trace")
+    public OrderTraceResponseDto getOrderTrace(
+            @PathVariable UUID orderId,
+            @RequestHeader("Authorization") String token
+    ) {
+        return handler.getOrderTrace(orderId, token);
+    }
+
 }

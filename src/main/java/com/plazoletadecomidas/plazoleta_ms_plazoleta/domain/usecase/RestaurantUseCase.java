@@ -20,7 +20,7 @@ public class RestaurantUseCase implements RestaurantServicePort {
     @Override
     public Restaurant saveRestaurant(Restaurant restaurant) {
         if (persistencePort.existsByNit(restaurant.getNit())) {
-            throw new RestaurantAlreadyExistsException("Ya existe un restaurante con ese NIT.");
+            throw new RestaurantAlreadyExistsException();
         }
 
         return persistencePort.saveRestaurant(restaurant);

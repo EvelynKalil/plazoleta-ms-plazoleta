@@ -5,7 +5,9 @@ import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderDetail
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderItemDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderRequestDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderResponseDto;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.dto.OrderTraceResponseDto;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.application.handler.OrderHandler;
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.configuration.NoSecurityConfig;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.DuplicateOrderItemException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.InvalidPinException;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.infrastructure.exception.UnauthorizedException;
@@ -15,12 +17,15 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,7 +43,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(NoSecurityConfig.class)
 @WebMvcTest(controllers = OrderController.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class OrderControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -343,5 +350,39 @@ class OrderControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Lo sentimos, tu pedido ya está en preparación y no puede cancelarse"));
     }
+
+    @Test
+    @DisplayName("GET /orders/{orderId}/trace -> 200 OK devuelve trazabilidad")
+    void getOrderTrace_ok() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        OrderTraceResponseDto.StatusLogDto log1 = new OrderTraceResponseDto.StatusLogDto();
+        log1.setStatus("PENDIENTE");
+        log1.setChangedAt(Instant.parse("2025-08-15T10:00:00Z"));
+        log1.setChangedBy("empleado1");
+
+        OrderTraceResponseDto.StatusLogDto log2 = new OrderTraceResponseDto.StatusLogDto();
+        log2.setStatus("EN_PREPARACION");
+        log2.setChangedAt(Instant.parse("2025-08-15T10:10:00Z"));
+        log2.setChangedBy("empleado2");
+
+        OrderTraceResponseDto traceDto = new OrderTraceResponseDto();
+        traceDto.setOrderId(orderId);
+        traceDto.setLogs(List.of(log1, log2));
+
+        Mockito.when(orderHandler.getOrderTrace(eq(orderId), anyString()))
+                .thenReturn(traceDto);
+
+        mockMvc.perform(get("/orders/{orderId}/trace", orderId)
+                        .header("Authorization", "Bearer token-cliente"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.logs", hasSize(2)))
+                .andExpect(jsonPath("$.logs[0].status").value("PENDIENTE"))
+                .andExpect(jsonPath("$.logs[1].status").value("EN_PREPARACION"));
+    }
+
+
 
 }
