@@ -35,4 +35,27 @@ public class JwtUtil {
     public SecretKey getSecretKey() {
         return this.secretKey;
     }
+
+    public UUID extractUserId(String token) {
+        String jwt = token.replace("Bearer ", "");
+        return UUID.fromString(
+                Jwts.parserBuilder()
+                        .setSigningKey(secretKey)
+                        .build()
+                        .parseClaimsJws(jwt)
+                        .getBody()
+                        .getSubject()
+        );
+    }
+
+    public String extractRole(String token) {
+        String jwt = token.replace("Bearer ", "");
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(jwt)
+                .getBody()
+                .get("role", String.class);
+    }
+
 }

@@ -25,8 +25,9 @@ import org.springframework.context.annotation.Configuration;
 public class BeanConfiguration {
 
     @Bean
-    public RestaurantServicePort restaurantServicePort(RestaurantPersistencePort persistencePort) {
-        return new RestaurantUseCase(persistencePort);
+    public RestaurantServicePort restaurantServicePort(RestaurantPersistencePort persistencePort,
+                                                       UserServicePort userServicePort) {
+        return new RestaurantUseCase(persistencePort, userServicePort);
     }
 
     @Bean

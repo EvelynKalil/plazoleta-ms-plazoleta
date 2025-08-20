@@ -1,5 +1,6 @@
 package com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.usecase;
 
+import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.api.UserServicePort;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.model.Restaurant;
 import com.plazoletadecomidas.plazoleta_ms_plazoleta.domain.spi.RestaurantPersistencePort;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,8 @@ import static org.mockito.Mockito.*;
 class RestaurantUseCaseTest {
 
     private final RestaurantPersistencePort persistencePort = mock(RestaurantPersistencePort.class);
-    private final RestaurantUseCase useCase = new RestaurantUseCase(persistencePort);
+    private final UserServicePort userServicePort = mock(UserServicePort.class);
+    private final RestaurantUseCase useCase = new RestaurantUseCase(persistencePort, userServicePort);
 
     @Test
     void shouldSaveRestaurant() {
@@ -29,6 +31,9 @@ class RestaurantUseCaseTest {
                 "https://i.imgur.com/logochoripan.png",
                 UUID.randomUUID()
         );
+
+        // Configurar mock: el owner siempre es válido
+        when(userServicePort.isOwner(restaurant.getOwnerId())).thenReturn(true);
 
         useCase.saveRestaurant(restaurant);
 

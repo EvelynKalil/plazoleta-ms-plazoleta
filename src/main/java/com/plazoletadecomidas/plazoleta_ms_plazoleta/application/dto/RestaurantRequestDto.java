@@ -26,7 +26,7 @@ public class RestaurantRequestDto {
     private String address;
 
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^\\+?[0-9]{6,15}$", message = "El teléfono debe tener entre 6 y 15 dígitos numéricos, opcionalmente con prefijo +")
+    @Pattern(regexp = "^\\+?[0-9]{6,13}$", message = "El teléfono debe tener máximo 13 dígitos numéricos, opcionalmente con prefijo +")
     private String phone;
 
     @NotBlank(message = "El logo es obligatorio")
